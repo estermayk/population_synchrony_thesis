@@ -1,13 +1,24 @@
+#---- packages ----
+
 library(lme4)
 library(insight)
 library(dplyr)
 library(ggplot2)
+library(tidyverse)
+
+#---- data import and duplicate removal ----
 
 #importing bird phenology datasheet
 phendat <- read.csv("data/Bird_Phenology.csv")
 
+#importing site details
+sitedat <- read.csv("data/Site_Details.csv")
+
 #removing non focal species
 bludat <- phendat[phendat$species == "bluti",]
+
+#changing -999s (0s in fledgling success caused by predation) to 0s
+bludat$suc[bludat$suc == "-999"] <- 0
 
 #checking for duplicates
 bludat$ID <- as.factor(paste(bludat$year, bludat$site, bludat$box, sep = "_")) 
@@ -15,6 +26,8 @@ length(bludat$ID)
 length(unique(bludat$ID))
 bludat$ID[duplicated(bludat$ID)]
 #2230 entries, 5 of which not unique
+
+#---- occupancy plots ----
 
 #creating a loop to create a df containing occupancy by site 
 site_codes <- unique(phendat$site)
@@ -64,7 +77,7 @@ occupancy_by_site_year <- bludat %>%
   summarise(occupancy = n() / sum(phendat$site == first(site) & phendat$year == first(year))) %>%
   ungroup()
 
-# Plot a box-and-whisker plot
+#plotting with box and whiskers
 ggplot(occupancy_by_site_year, aes(x = factor(year), y = occupancy)) +
   geom_boxplot(outlier.colour = "red", outlier.shape = 21) +
   geom_text(data = occupancy_by_site_year %>%
@@ -77,8 +90,28 @@ ggplot(occupancy_by_site_year, aes(x = factor(year), y = occupancy)) +
        x = "Year",
        y = "Occupancy")
 
-#changing -999s (0s in fledgling success caused by predation) to 0s
-bludat$suc[bludat$suc == "-999"] <- 0
+?scale_fill_gradient
+
+occupancy_by_site_year <- occupancy_by_site_year %>%
+  left_join(sitedat %>% select(site, Mean.Elev), by = "site")
+
+ggplot(occupancy_by_site_year, aes(x = factor(year), y = occupancy, fill = Mean.Elev)) +
+  scale_fill_gradient(low = "white", high = "black") +
+  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 2, width = 0.4, height = 0) +
+  theme_minimal() +
+  labs(title = "Annual Occupancy by Site",
+       x = "Year",
+       y = "Occupancy",
+       fill = "Elevation") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.x = element_line(color = "gray", size = 0.5)
+  )
+  
+?geom_jitter
+
+#---- initial suc mod ----
 
 #very early model attempt on fledgling success
 bludat$site_year <- as.factor(paste(bludat$site, bludat$year, sep = "_")) 
@@ -98,6 +131,8 @@ sucsync <- var_intercept_year/(var_intercept_year + var_intercept_site_year)
 
 sucsync
 
+#---- clutch swap variance ----
+
 #lets look at the variance caused by clutch swap
 bludatswap <- bludat %>%
   mutate(clutch.swap.treatment = ifelse(clutch.swap.treatment %in% 1:9, "swap", clutch.swap.treatment))
@@ -112,10 +147,29 @@ summary(clutchswapmod)
 swapmodmixed <- lmer(suc ~ clutch.swap.treatment + (1|site) + (1|year), data = bludatswap)
 summary(swapmodmixed)
 
-levels(bludat$clutch.swap.treatment)
+#relevel to make unm the reference
+str(bludatswap)
+bludatswap$clutch.swap.treatment <- as.factor(bludatswap$clutch.swap.treatment)
+bludatswap$clutch.swap.treatment <- relevel(bludatswap$clutch.swap.treatment, ref = "unm")
 
-#reorder factors to make unm the reference
+#making year a factor to reduce noise
+bludatswap$year <- as.factor(bludatswap$year)
+
+#removing nas in swap
+bludatswap <- bludatswap %>%
+  mutate(clutch.swap.treatment = na_if(clutch.swap.treatment, "")) %>%
+  drop_na(clutch.swap.treatment)
+
+#popping odd and not possible together 
+bludatswap <- bludat %>%
+  mutate(clutch.swap.treatment = as.character(clutch.swap.treatment)) %>%
+  mutate(clutch.swap.treatment = ifelse(clutch.swap.treatment == "not", "odd", clutch.swap.treatment))
+
+swapmodmixed <- lmer(suc ~ clutch.swap.treatment + year + (1|site), data = bludatswap)
+summary(swapmodmixed)
+
 #think about nesting - year should not be swapped 
 
 tapply(bludatswap$clutch.swap.treatment, bludatswap$clutch.swap.treatment, length)
 tapply(bludatswap$suc, bludatswap$clutch.swap.treatment, mean, na.rm=TRUE)
+
