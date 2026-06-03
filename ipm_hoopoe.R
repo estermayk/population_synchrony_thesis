@@ -69,6 +69,8 @@ y_site2 <- round(y_site1 * 0.60 * exp(rnorm(nyears, 0, 0.10)))
 J_site2 <- round(J_site1 * 0.60 * exp(rnorm(nyears - 1, 0, 0.10)))
 R_site2 <- round(R_site1 * 0.60 * exp(rnorm(nyears - 1, 0, 0.10)))
 
+view(y_site2)
+
 marray_j_site2 <- structure(
   c(12, 0, 0, 0, 0, 0, 0, 0, 2, 28, 0, 0, 0, 0, 0, 0,
     0, 7, 45, 0, 0, 0, 0, 0, 0, 2, 6, 38, 0, 0, 0, 0, 0, 0, 2, 4,
@@ -275,9 +277,57 @@ p_ntot <- ggplot(ntot_df, aes(x = year)) +
 p_ntot
 
 # Exercises for Ester -
+
 # Exercise1: Plot and investigate temporal trends in other demographic parameters (survival, productivity, immigration, population growth rate etc) across the different sites (doing this will be handy for blue tit data analysis)
+
+#productivity/fecundity 
+# Estimated f per site per year
+f_list <- lapply(1:nsites, function(s) {
+  pattern <- paste0("f\\[", s, ",")
+  df <- extract_summary(posterior_ipm, pattern)
+  df$year <- years_m1
+  df$site <- site_labels[s]
+  df
+})
+f_est <- bind_rows(f_list)
+
+# Observed f per site per year
+obs_f <- expand.grid(site = site_labels, year = years_m1) %>%
+  arrange(site, year) %>%
+  mutate(observed = as.vector(t(stan_data$J / stan_data$R)))
+
+# Merge both dfs
+f_df <- left_join(f_est, obs_f, by = c("site", "year"))
+
+# Plot
+p_f <- ggplot(f_df, aes(x = year)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "steelblue", alpha = 0.25) +
+  geom_line(aes(y = mean, colour = "Estimated f"), linewidth = 0.9) +
+  geom_point(aes(y = mean, colour = "Estimated f"), size = 1.5) +
+  geom_line(aes(y = observed, colour = "Observed f"),
+            linewidth = 0.9, linetype = "dashed") +
+  geom_point(aes(y = observed, colour = "Observed f"), size = 1.5) +
+  scale_colour_manual(values = c("Estimated f" = "steelblue",
+                                 "Observed f"  = "firebrick")) +
+  facet_wrap(~ site, scales = "free_y") +
+  labs(title = "Fecundity per Nest", x = "Year", y = "N",
+       colour = NULL) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks=8)
+
+p_f
+
 # Exercise2: Plot and investigate posterior distributions of random effect variances and spatial synchrony (ICCs) for all demographic parameters (doing this will be handy for blue tit data analysis)
+
+
 # Exercise3: Transform blue tit data into similar format used here for hoopoe dataset, namely:
+
+
 # a) Collapse individual capture histories to m-array format for each site (code to convert individual capture histories to m-arrays can be found in Chapter 7.10 in book, "Bayesian Population Analysis using WinBUGS --- A Hierarchical Perspective" (2012) by Marc Kéry and Michael Schaub)
+
+
 # b) Also for each site, obtain observed population count (maximal number of simultaneously occupied nest boxes in each year), number of offspring and number of surveyed broods and investigate temporal trends.
+
+
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
