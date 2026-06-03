@@ -165,7 +165,7 @@ bludatswap <- bludat %>%
   mutate(clutch.swap.treatment = as.character(clutch.swap.treatment)) %>%
   mutate(clutch.swap.treatment = ifelse(clutch.swap.treatment == "not", "odd", clutch.swap.treatment))
 
-swapmodmixed <- lmer(suc ~ clutch.swap.treatment + year + (1|site), data = bludatswap)
+swapmodmixed <- lmer(suc ~ (1|clutch.swap.treatment) + year + (1|site), data = bludatswap)
 summary(swapmodmixed)
 
 #think about nesting - year should not be swapped 
