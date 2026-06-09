@@ -310,7 +310,7 @@ p_f <- ggplot(f_df, aes(x = year)) +
   scale_colour_manual(values = c("Estimated f" = "steelblue",
                                  "Observed f"  = "firebrick")) +
   facet_wrap(~ site, scales = "free_y") +
-  labs(title = "Fecundity per Nest", x = "Year", y = "N",
+  labs(title = "Fecundity per Nest", x = "Year", y = "N Fledglings/female",
        colour = NULL) +
   theme_bw(base_size = 12) +
   theme(legend.position = "bottom") +
@@ -318,16 +318,356 @@ p_f <- ggplot(f_df, aes(x = year)) +
 
 p_f
 
+
+#survival
+#juveniles
+# Estimated phij per site per year
+phij_list <- lapply(1:nsites, function(s) {
+  pattern <- paste0("phij\\[", s, ",")
+  df <- extract_summary(posterior_ipm, pattern)
+  df$year <- years_m1
+  df$site <- site_labels[s]
+  df
+})
+phij_est <- bind_rows(phij_list)
+
+#adults
+phia_list <- lapply(1:nsites, function(s) {
+  pattern <- paste0("phia\\[", s, ",")
+  df <- extract_summary(posterior_ipm, pattern)
+  df$year <- years_m1
+  df$site <- site_labels[s]
+  df
+})
+phia_est <- bind_rows(phia_list)
+
+
+# Observed f per site per year
+#obs_phij <- expand.grid(site = site_labels, year = years_m1) %>%
+ # arrange(site, year) %>%
+  #mutate(observed = as.vector(t()))
+
+# Merge both dfs
+phi_df <- left_join(phij_est, phia_est, by = c("site", "year"))
+
+# Plot
+p_phi <- ggplot(phi_df, aes(x = year)) +
+  geom_ribbon(aes(ymin = lower.x, ymax = upper.x), fill = "steelblue", alpha = 0.25) +
+  geom_line(aes(y = mean.x, colour = "Estimated juvenile survival"), linewidth = 0.9) +
+  geom_point(aes(y = mean.x, colour = "Estimated juvenile survival"), size = 1.5) +
+  geom_ribbon(aes(ymin = lower.y, ymax = upper.y), fill = "firebrick", alpha = 0.25) +
+  geom_line(aes(y = mean.y, colour = "Estimated adult survival"), linewidth = 0.9) +
+  geom_point(aes(y = mean.y, colour = "Estimated adult survival"), size = 1.5) +
+  scale_colour_manual(values = c("Estimated juvenile survival" = "steelblue", "Estimated adult survival" = "firebrick")) +
+  facet_wrap(~ site, scales = "free_y") +
+  labs(title = "Estimated Survival", x = "Year", y = "Phi",
+       colour = NULL) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks=8)
+
+p_phi
+
+#population growth rate
+
+lambda_list <- lapply(1:nsites, function(s) {
+  pattern <- paste0("lambda\\[", s, ",")
+  df <- extract_summary(posterior_ipm, pattern)
+  df$year <- years_m1
+  df$site <- site_labels[s]
+  df
+})
+lambda_df <- bind_rows(lambda_list)
+
+# Observed counts per site per year
+#obs_counts <- expand.grid(site = site_labels, year = years) %>%
+ # arrange(site, year) %>%
+  #mutate(observed = as.vector(t(stan_data$y)))  # y is [nsites, nyears]
+
+# Merge both dfs
+#lambda_df <- left_join(lambda_df, obs_counts, by = c("site", "year"))
+
+# Plot
+p_lambda <- ggplot(lambda_df, aes(x = year)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "steelblue", alpha = 0.25) +
+  geom_line(aes(y = mean, colour = "Estimated lambda"), linewidth = 0.9) +
+  geom_point(aes(y = mean, colour = "Estimated lambda"), size = 1.5) +
+  #geom_line(aes(y = observed, colour = "Observed count"),
+   #         linewidth = 0.9, linetype = "dashed") +
+  #geom_point(aes(y = observed, colour = "Observed count"), size = 1.5) +
+  scale_colour_manual(values = c("Estimated lambda" = "steelblue")) +
+  facet_wrap(~ site, scales = "free_y") +
+  labs(title = "Population growth rate", x = "Year", y = "Lambda",
+       colour = NULL) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks=8)
+
+p_lambda
+
+#immigration
+Nadimm_list <- lapply(1:nsites, function(s) {
+  pattern <- paste0("Nadimm\\[", s, ",")
+  df <- extract_summary(posterior_ipm, pattern)
+  df$year <- years
+  df$site <- site_labels[s]
+  df
+})
+Nadimm_df <- bind_rows(Nadimm_list)
+
+# Observed counts per site per year
+obs_counts <- expand.grid(site = site_labels, year = years) %>%
+  arrange(site, year) %>%
+  mutate(observed = as.vector(t(stan_data$y)))  # y is [nsites, nyears]
+
+# Merge both dfs
+Nadimm_df <- left_join(Nadimm_df, obs_counts, by = c("site", "year"))
+
+# Plot
+p_Nadimm <- ggplot(Nadimm_df, aes(x = year)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "steelblue", alpha = 0.25) +
+  geom_line(aes(y = mean, colour = "Estimated Nadimm"), linewidth = 0.9) +
+  geom_point(aes(y = mean, colour = "Estimated Nadimm"), size = 1.5) +
+#  geom_line(aes(y = observed, colour = "Observed count"),
+#            linewidth = 0.9, linetype = "dashed") +
+#  geom_point(aes(y = observed, colour = "Observed count"), size = 1.5) +
+  scale_colour_manual(values = c("Estimated Nadimm" = "steelblue")) +
+  facet_wrap(~ site, scales = "free_y") +
+  labs(title = "N Immigrants", x = "Year", y = "N",
+       colour = NULL) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks=8)
+
+p_Nadimm
+
+(p_ntot | p_lambda | p_f) / (p_phi | p_Nadimm)
+
 # Exercise2: Plot and investigate posterior distributions of random effect variances and spatial synchrony (ICCs) for all demographic parameters (doing this will be handy for blue tit data analysis)
 
+#lambda
+lambda_pds <- posterior_ipm %>%
+  select(contains("lambda")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+pds_lambda <- ggplot(lambda_pds, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Pooled Posterior Distribution of Lambda",
+       x = "Lambda Value",
+       y = "Density") +
+  theme_minimal()
+
+#phia icc
+
+phia_icc <- posterior_ipm %>%
+  select(contains("icc_phia")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+icc_phia_p <- ggplot(phia_icc, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Adult Survival ICC",
+       x = "phia ICC",
+       y = "Density") +
+  theme_minimal()
+
+icc_phia_p
+
+#phia sig
+
+phia_sig <- posterior_ipm %>%
+  select(contains("sig_phia")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+sig_phia_p <- ggplot(phia_sig, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Adult Survival Random Effect Variances",
+       x = "phia sig",
+       y = "Density") +
+  theme_minimal()
+
+sig_phia_p
+
+#phij icc
+
+phij_icc <- posterior_ipm %>%
+  select(contains("icc_phij")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+icc_phij_p <- ggplot(phij_icc, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Juvenile Survival ICC",
+       x = "phij ICC",
+       y = "Density") +
+  theme_minimal()
+
+icc_phij_p
+
+#phij sig
+
+phij_sig <- posterior_ipm %>%
+  select(contains("sig_phij")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+sig_phij_p <- ggplot(phij_sig, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Juvenile Survival Random Effect Variances",
+       x = "phij sig",
+       y = "Density") +
+  theme_minimal()
+
+sig_phij_p
+
+#fec icc
+
+fec_icc <- posterior_ipm %>%
+  select(contains("icc_fec")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+icc_fec_p <- ggplot(fec_icc, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Fecundity ICC",
+       x = "fec ICC",
+       y = "Density") +
+  theme_minimal()
+
+icc_fec_p
+
+#fec sig
+
+fec_sig <- posterior_ipm %>%
+  select(contains("sig_fec")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+sig_fec_p <- ggplot(fec_sig, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Fecundity Random Effect Variances",
+       x = "fec sig",
+       y = "Density") +
+  theme_minimal()
+
+sig_fec_p
+
+#im icc
+
+im_icc <- posterior_ipm %>%
+  select(contains("icc_im")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+icc_im_p <- ggplot(im_icc, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Immigration ICC",
+       x = "im ICC",
+       y = "Density") +
+  theme_minimal()
+
+icc_im_p
+
+#im sig
+
+im_sig <- posterior_ipm %>%
+  select(contains("sig_im")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+sig_im_p <- ggplot(im_sig, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Immigration Random Effect Variances",
+       x = "im sig",
+       y = "Density") +
+  theme_minimal()
+
+sig_im_p
+
+(sig_phia_p | icc_phia_p) / (sig_phij_p | icc_phij_p) / (sig_fec_p | icc_fec_p) / (sig_im_p | icc_im_p)
 
 # Exercise3: Transform blue tit data into similar format used here for hoopoe dataset, namely:
 
 
 # a) Collapse individual capture histories to m-array format for each site (code to convert individual capture histories to m-arrays can be found in Chapter 7.10 in book, "Bayesian Population Analysis using WinBUGS --- A Hierarchical Perspective" (2012) by Marc Kéry and Michael Schaub)
 
+#from kery and schaub 2012:
+# Function to create a m-array based on capture-histories (CH)
+marray <- function(CH){
+  nind <- dim(CH)[1]
+  n.occasions <- dim(CH)[2]
+  m.array <- matrix(data = 0, ncol = n.occasions+1, nrow = n.occasions)
+  # Calculate the number of released individuals at each time period
+  for (t in 1:n.occasions){
+    m.array[t,1] <- sum(CH[,t])
+  }
+  for (i in 1:nind){
+    pos <- which(CH[i,]!=0)
+    g <- length(pos)
+    for (z in 1:(g-1)){
+      m.array[pos[z],pos[z+1]] <- m.array[pos[z],pos[z+1]] + 1
+    } #z
+  } #i
+  # Calculate the number of individuals that is never recaptured
+  for (t in 1:n.occasions){
+    m.array[t,n.occasions+1] <- m.array[t,1] - sum(m.array[t,2:n.occasions])
+  }
+  out <- m.array[1:(n.occasions-1),2:(n.occasions+1)]
+  return(out)
+}
+
+#lets test with ALN first
+
+ALN_adults <- adults[(adults$site == "ALN"),]
+
+ALN_adults_CH <- data.frame(individuals = c(unique(ALN_adults$ring)))
+
+ALN_years <- sort(unique(ALN_adults$year))
+
+for (year in ALN_years) {
+  ALN_adults_CH[[as.character(year)]] <- NA
+}
+
+for (i in 1:nrow(ALN_adults_CH)) {
+  individual <- ALN_adults_CH$individuals[i]
+  capture_years <- unique(ALN_adults$year[ALN_adults$ring == individual])
+  ALN_adults_CH[i, as.character(capture_years)] <- 1
+}
+
+ALN_adults_CH[is.na(ALN_adults_CH)] <- 0
+ALN_adults_CH_matrix <- as.matrix(ALN_adults_CH[,-1])
+ALN_adults_CH_matrix <- (apply(ALN_adults_CH_matrix, 2, as.numeric))
+
+ALN_adults_marray <- marray(ALN_adults_CH_matrix)
+
+#making a function to iterate over the sites
+create_marray <- function(site_code, data) {
+  site_data <- data[data$site == site_code,]
+  
+  capture_history <- data.frame(individuals = unique(site_data$ring))
+  site_years <- 2014:2025  
+  for (year in site_years) {
+    capture_history[[as.character(year)]] <- NA
+  }
+
+  for (i in 1:nrow(capture_history)) {
+    individual <- capture_history$individuals[i]
+    capture_years <- unique(site_data$year[site_data$ring == individual])
+    capture_history[i, as.character(capture_years)] <- 1
+  }
+  
+  capture_history[is.na(capture_history)] <- 0
+  
+  capture_history_matrix <- as.matrix(capture_history[,-1])
+  capture_history_matrix <- apply(capture_history_matrix, 2, as.numeric)
+  
+  marray_result <- marray(capture_history_matrix)
+  return(marray_result)
+}
+
+site_codes <- unique(adults$site)
+
+marray_list <- lapply(site_codes, function(site) create_marray(site, adults))
+
+names(marray_list) <- site_codes
+
 
 # b) Also for each site, obtain observed population count (maximal number of simultaneously occupied nest boxes in each year), number of offspring and number of surveyed broods and investigate temporal trends.
 
 
+
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
+

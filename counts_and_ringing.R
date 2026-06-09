@@ -27,7 +27,7 @@ recruitsbyyear <- recruits %>%
   group_by(year) %>%
   summarise(countadults = n())
 
-ggplot(recruitsbyyear, aes(x = factor(year), y = count)) +
+ggplot(recruitsbyyear, aes(x = factor(year), y = countadults)) +
   geom_bar(stat = "identity", fill = "skyblue") +
   theme_minimal() +
   labs(title = "Recruits",
@@ -47,14 +47,15 @@ recruitsbyyear <- recruitsbyyear %>%
 recruitsandadults <- left_join(adultsbyyear, recruitsbyyear, by = "year")
 
 recruitsplot <- recruitsandadults %>%
-  pivot_longer(cols = c(count.x, count.y), 
+  pivot_longer(cols = c(countadults.x, countadults.y), 
                names_to = "Category", values_to = "Count") 
 
 ggplot(recruitsplot, aes(x = factor(year), y = Count, fill = Category)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = c("skyblue", "lightcoral"), labels = c("Adults", "Recaptured Nestlings")) +
+  scale_fill_manual(values = c("steelblue", "firebrick"), labels = c("Adults", "Recaptured Nestlings")) +
   theme_minimal() +
   labs(title = "Annual Counts of Adults and Recaptured Nestlings",
        x = "Year",
        y = "Count",
        fill = "Category")
+
