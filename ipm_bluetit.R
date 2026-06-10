@@ -89,10 +89,12 @@ names(marray_list) <- site_codes
 
 #max occupancy
 phendat$ID <- as.factor(paste(phendat$year, phendat$site, phendat$box, sep = "_")) 
+phendat$suc[phendat$suc == "-999"] <- 0
 ord_dates_phendat <- select(phendat, c('year', 'site', 'ID', 'n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 'cs', 'fki', 'hatching_first_recorded', 'v1date', 'v2date'))
 
+
 transform_dates <- function(df) {
-  date_columns <- 100:180
+  date_columns <- 70:180
   occupancy_df <- matrix(0, ncol = length(date_columns), nrow = nrow(df))
   colnames(occupancy_df) <- as.character(date_columns)
   
@@ -102,7 +104,7 @@ transform_dates <- function(df) {
                                                  'v2date')]))    
     date_range <- dates[!is.na(dates)]
     if (length(date_range) > 0) {
-      min_date <- max(min(date_range), 100)
+      min_date <- max(min(date_range), 70)
       max_date <- min(max(date_range), 180)
       valid_dates <- min_date:max_date
       valid_dates <- valid_dates[valid_dates %in% date_columns]
@@ -119,7 +121,7 @@ transform_dates <- function(df) {
 occupancy_data <- transform_dates(ord_dates_phendat)
 
 max_occupancy <- function(df) {
-  numeric_columns <- as.character(100:180)
+  numeric_columns <- as.character(70:180)
   df[numeric_columns] <- lapply(df[numeric_columns], as.numeric)
   results <- df %>%
     group_by(year, site) %>%
@@ -179,7 +181,7 @@ for (i in site_codes) {
 }
 
 count_broods_surveyed <- function(df) {
-  numeric_columns <- as.character(100:180)
+  numeric_columns <- as.character(70:180)
   df[numeric_columns] <- lapply(df[numeric_columns], as.numeric)
   results <- df %>%
     group_by(year, site) %>%
@@ -201,4 +203,123 @@ for (i in site_codes) {
 
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
 
+y_mat_bt <- rbind(y_list)
 
+y_mat_bt <- as.data.frame(y_mat_bt, stringsAsFactors = FALSE)
+
+y_mat_bt <- y_mat_bt %>%
+  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
+  rowwise() %>%
+  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
+  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
+  unnest_wider(yearly_data, names_sep = "_") %>%
+  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
+  mutate(across(everything(), ~ replace_na(.x, 0)))
+
+J_mat_bt <- rbind(J_list)
+
+J_mat_bt <- as.data.frame(J_mat_bt, stringsAsFactors = FALSE)
+
+J_mat_bt <- J_mat_bt %>%
+  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
+  rowwise() %>%
+  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
+  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
+  unnest_wider(yearly_data, names_sep = "_") %>%
+  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
+  mutate(across(everything(), ~ replace_na(.x, 0)))
+
+R_mat_bt <- rbind(R_list)
+
+R_mat_bt <- as.data.frame(R_mat_bt, stringsAsFactors = FALSE)
+
+R_mat_bt <- R_mat_bt %>%
+  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
+  rowwise() %>%
+  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
+  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
+  unnest_wider(yearly_data, names_sep = "_") %>%
+  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
+  mutate(across(everything(), ~ replace_na(.x, 0)))
+
+y_mat_bt <- column_to_rownames(y_mat_bt, var = "site")
+J_mat_bt <- column_to_rownames(J_mat_bt, var = "site")
+R_mat_bt <- column_to_rownames(R_mat_bt, var = "site")
+
+print(dim(y_mat_bt))
+print(dim(J_mat_bt))
+print(dim(R_mat_bt))
+print(dim(marray_list))
+
+stan_data_bt <- list(
+  nyears    = 12,
+  nsites    = 44,
+  y         = y_mat_bt,      
+  J         = J_mat_bt,      
+  R         = R_mat_bt,        
+  marray_a  = marray_list
+)
+
+params_bt <- c(
+  "phia", "f", "omega", "p",
+  "mphia", "mfec", "mim",
+  "lambda", "mlam",
+  "sig_phia",      "sig_fec",      "sig_im",
+  "sig_site_phia", "sig_site_fec", "sig_site_im",
+  "sig_sy_phia",   "sig_sy_fec",   "sig_sy_im",
+  "N1", "NadSurv", "Nadimm", "Ntot",
+  "var_phia_year", "var_phia_siteyear", "icc_phia",
+  "var_fec_year", "var_fec_siteyear", "icc_fec",
+  "var_im_year", "var_im_siteyear", "icc_im"
+)
+
+inits_bt <- lapply(1:nc, function(i) {
+  list(l_mphia = rnorm(1, 0.2, 0.5),
+       l_mfec = rnorm(1, 0.2, 0.5),
+       l_mim = rnorm(1, 0.2, 0.5),
+       l_p = rnorm(1, 0.2, 1),
+       sig_phia = runif(1, 0.1, 10),
+       sig_fec = runif(1, 0.1, 10),
+       sig_im = runif(1, 0.1, 10),
+       sig_site_phia = runif(1, 0.1, 10),
+       sig_site_fec = runif(1, 0.1, 10),
+       sig_site_im = runif(1, 0.1, 10),
+       sig_sy_phia = runif(1, 0.1, 10),
+       sig_sy_fec = runif(1, 0.1, 10),
+       sig_sy_im = runif(1, 0.1, 10),
+       N1      = lapply(1:nsites, function(s) round(runif(nyears,  1, 50))),
+       NadSurv = lapply(1:nsites, function(s) round(runif(nyears,  5, 50))),
+       Nadimm  = lapply(1:nsites, function(s) round(runif(nyears,  1, 50)))
+  )})
+
+closeAllConnections()
+
+ipm_bt <- stan(
+  file    = "ipm_bt.stan",
+  data    = stan_data_bt,
+  init    = inits_bt,
+  pars    = params_bt,
+  chains  = nc,
+  iter    = ni,
+  warmup  = nb,
+  thin    = nt,
+  seed    = 2,
+  control = list(
+    adapt_delta   = 0.99,
+    max_treedepth = 15    
+  )
+)
+
+print(ipm_bt,
+      pars = c("mphia", "mfec", "mim",
+               "sig_phia",      "sig_fec",      "sig_im",
+               "sig_site_phia", "sig_site_fec", "sig_site_im",
+               "sig_sy_phia",   "sig_sy_fec",   "sig_sy_im",
+               "mlam",
+               "var_phia_year", "var_phia_siteyear", "icc_phia",
+               "var_fec_year", "var_fec_siteyear", "icc_fec",
+               "var_im_year", "var_im_siteyear", "icc_im"),
+      digits = 3)
+
+# Get posterior distributions
+posterior_ipm <- as.data.frame(ipm_bt)

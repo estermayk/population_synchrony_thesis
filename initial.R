@@ -98,7 +98,7 @@ occupancy_by_site_year <- occupancy_by_site_year %>%
 ggplot(occupancy_by_site_year, aes(x = factor(year), y = occupancy, fill = Mean.Elev)) +
   scale_fill_gradient(low = "white", high = "black") +
   geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
-  geom_jitter(shape = 21, size = 2, width = 0.4, height = 0) +
+  geom_jitter(shape = 21, size = 2, width = 0.3, height = 0.1) +
   theme_minimal() +
   labs(title = "Annual Occupancy by Site",
        x = "Year",
