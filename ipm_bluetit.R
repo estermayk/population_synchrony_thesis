@@ -58,6 +58,7 @@ create_marray <- function(site_code, data) {
   
   capture_history <- data.frame(individuals = unique(site_data$ring))
   site_years <- 2014:2025  
+  #change the above line to sort(unique(site_data$year))
   for (year in site_years) {
     capture_history[[as.character(year)]] <- NA
   }
@@ -86,7 +87,118 @@ names(marray_list) <- site_codes
 
 # b) Also for each site, obtain observed population count (maximal number of simultaneously occupied nest boxes in each year), number of offspring and number of surveyed broods and investigate temporal trends.
 
+#max occupancy
+phendat$ID <- as.factor(paste(phendat$year, phendat$site, phendat$box, sep = "_")) 
+ord_dates_phendat <- select(phendat, c('year', 'site', 'ID', 'n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 'cs', 'fki', 'hatching_first_recorded', 'v1date', 'v2date'))
+
+transform_dates <- function(df) {
+  date_columns <- 100:180
+  occupancy_df <- matrix(0, ncol = length(date_columns), nrow = nrow(df))
+  colnames(occupancy_df) <- as.character(date_columns)
+  
+  for (i in 1:nrow(df)) {
+    dates <- suppressWarnings(as.numeric(df[i, c('n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 
+                                                 'cs', 'fki', 'hatching_first_recorded', 'v1date', 
+                                                 'v2date')]))    
+    date_range <- dates[!is.na(dates)]
+    if (length(date_range) > 0) {
+      min_date <- max(min(date_range), 100)
+      max_date <- min(max(date_range), 180)
+      valid_dates <- min_date:max_date
+      valid_dates <- valid_dates[valid_dates %in% date_columns]
+      occupancy_df[i, as.character(valid_dates)] <- 1
+    }
+  }
+  
+  occupancy_df <- as.data.frame(occupancy_df)
+  occupancy_df <- cbind(df[, c('year', 'site', 'ID')], occupancy_df)
+  
+  return(occupancy_df)
+}
+
+occupancy_data <- transform_dates(ord_dates_phendat)
+
+max_occupancy <- function(df) {
+  numeric_columns <- as.character(100:180)
+  df[numeric_columns] <- lapply(df[numeric_columns], as.numeric)
+  results <- df %>%
+    group_by(year, site) %>%
+    summarise(max_occupancy = max(colSums(across(all_of(numeric_columns)), na.rm = TRUE), na.rm = TRUE)) %>%
+    ungroup()
+  
+  return(results)
+}
+
+max_occupancy_df <- max_occupancy(occupancy_data)
+
+max_occupancy_df_elev <- max_occupancy_df %>%
+  left_join(sitedat %>% select(site, Mean.Elev), by = "site")
+
+ggplot(max_occupancy_df_elev, aes(x = factor(year), y = max_occupancy, fill = Mean.Elev)) +
+  scale_fill_gradient(low = "white", high = "black") +
+  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 2, width = 0.3, height = 0.3) +
+  #geom_line(aes(group = site, colour = site)) +
+  theme_minimal() +
+  labs(title = "Annual Occupancy by Site",
+       x = "Year",
+       y = "Occupancy",
+       fill = "Elevation") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.x = element_line(color = "gray", size = 0.5)
+  )
+
+y_list <- list()
+for (i in site_codes) {
+  y_list[[i]] <- max_occupancy_df %>%
+    filter(site == i) %>%
+    select(max_occupancy) %>%
+    as.list()
+}
+
+#number of offspring
+
+count_fledglings <- function(df) {
+  results <- df %>%
+    group_by(year, site) %>%
+    summarise(fledgling_count = sum(suc, na.rm = TRUE)) %>%
+    ungroup()
+  
+  return(results)
+}
+
+n_offspring_df <- count_fledglings(phendat)
+
+J_list <- list()
+for (i in site_codes) {
+  J_list[[i]] <- n_offspring_df %>%
+  filter(site == i) %>%
+  select(fledgling_count) %>%
+  as.list()
+}
+
+count_broods_surveyed <- function(df) {
+  numeric_columns <- as.character(100:180)
+  df[numeric_columns] <- lapply(df[numeric_columns], as.numeric)
+  results <- df %>%
+    group_by(year, site) %>%
+    summarise(brood_count = sum(rowSums(across(all_of(numeric_columns))) > 0, na.rm = TRUE)) %>%    ungroup()
+  
+  return(results)
+}
+
+broods_surveyed_df <- count_broods_surveyed(occupancy_data)
+
+R_list <- list()
+for (i in site_codes) {
+  R_list[[i]] <- broods_surveyed_df %>%
+    filter(site == i) %>%
+    select(brood_count) %>%
+    as.list()
+}
 
 
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
+
 
