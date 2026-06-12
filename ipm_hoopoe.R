@@ -441,7 +441,11 @@ p_Nadimm <- ggplot(Nadimm_df, aes(x = year)) +
 
 p_Nadimm
 
-(p_ntot | p_lambda | p_f) / (p_phi | p_Nadimm)
+rates_plots <- (p_ntot | p_lambda | p_f) / (p_phi | p_Nadimm)
+
+rates_plots
+
+ggsave("rates_plot.png", plot = rates_plots)
 
 # Exercise2: Plot and investigate posterior distributions of random effect variances and spatial synchrony (ICCs) for all demographic parameters (doing this will be handy for blue tit data analysis)
 
@@ -472,20 +476,20 @@ icc_phia_p <- ggplot(phia_icc, aes(x = Value)) +
 
 icc_phia_p
 
-#phia sig
+#var_phia_siteyear
 
-phia_sig <- posterior_ipm %>%
-  select(contains("sig_phia")) %>%
+var_phia_siteyear <- posterior_ipm %>%
+  select(contains("var_phia_siteyear")) %>%
   pivot_longer(cols = everything(), values_to = "Value")
 
-sig_phia_p <- ggplot(phia_sig, aes(x = Value)) +
+var_phia_siteyear_p <- ggplot(var_phia_siteyear, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
   labs(title = "Adult Survival Random Effect Variances",
-       x = "phia sig",
+       x = "phia var",
        y = "Density") +
   theme_minimal()
 
-sig_phia_p
+var_phia_siteyear_p
 
 #phij icc
 
@@ -502,20 +506,20 @@ icc_phij_p <- ggplot(phij_icc, aes(x = Value)) +
 
 icc_phij_p
 
-#phij sig
+#var_phij_siteyear
 
-phij_sig <- posterior_ipm %>%
-  select(contains("sig_phij")) %>%
+var_phij_siteyear <- posterior_ipm %>%
+  select(contains("var_phij_siteyear")) %>%
   pivot_longer(cols = everything(), values_to = "Value")
 
-sig_phij_p <- ggplot(phij_sig, aes(x = Value)) +
+var_phij_siteyear_p <- ggplot(var_phij_siteyear, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
   labs(title = "Juvenile Survival Random Effect Variances",
-       x = "phij sig",
+       x = "phij var",
        y = "Density") +
   theme_minimal()
 
-sig_phij_p
+var_phij_siteyear_p
 
 #fec icc
 
@@ -532,20 +536,20 @@ icc_fec_p <- ggplot(fec_icc, aes(x = Value)) +
 
 icc_fec_p
 
-#fec sig
+#var_fec_siteyear
 
-fec_sig <- posterior_ipm %>%
-  select(contains("sig_fec")) %>%
+var_fec_siteyear <- posterior_ipm %>%
+  select(contains("var_fec_siteyear")) %>%
   pivot_longer(cols = everything(), values_to = "Value")
 
-sig_fec_p <- ggplot(fec_sig, aes(x = Value)) +
+var_fec_siteyear_p <- ggplot(var_fec_siteyear, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
   labs(title = "Fecundity Random Effect Variances",
-       x = "fec sig",
+       x = "fec var",
        y = "Density") +
   theme_minimal()
 
-sig_fec_p
+var_fec_siteyear_p
 
 #im icc
 
@@ -562,20 +566,23 @@ icc_im_p <- ggplot(im_icc, aes(x = Value)) +
 
 icc_im_p
 
-#im sig
+#var_im_siteyear
 
-im_sig <- posterior_ipm %>%
-  select(contains("sig_im")) %>%
+var_im_siteyear <- posterior_ipm %>%
+  select(contains("var_im_siteyear")) %>%
   pivot_longer(cols = everything(), values_to = "Value")
 
-sig_im_p <- ggplot(im_sig, aes(x = Value)) +
+var_im_siteyear_p <- ggplot(var_im_siteyear, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
   labs(title = "Immigration Random Effect Variances",
-       x = "im sig",
+       x = "im var",
        y = "Density") +
   theme_minimal()
 
-sig_im_p
+var_im_siteyear_p
 
-(sig_phia_p | icc_phia_p) / (sig_phij_p | icc_phij_p) / (sig_fec_p | icc_fec_p) / (sig_im_p | icc_im_p)
+icc_var_plots <- (var_phia_siteyear_p | icc_phia_p) / (var_phij_siteyear_p | icc_phij_p) / (var_fec_siteyear_p | icc_fec_p) / (var_im_siteyear_p | icc_im_p)
 
+icc_var_plots
+
+ggsave("icc_var_plots.png", plot = icc_var_plots)
