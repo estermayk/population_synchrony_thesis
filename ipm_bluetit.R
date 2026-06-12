@@ -55,6 +55,8 @@ ALN_adults_CH[is.na(ALN_adults_CH)] <- 0
 ALN_adults_CH_matrix <- as.matrix(ALN_adults_CH[,-1])
 ALN_adults_CH_matrix <- (apply(ALN_adults_CH_matrix, 2, as.numeric))
 
+ALN_adults_CH_matrix
+
 ALN_adults_marray <- marray(ALN_adults_CH_matrix)
 
 ALN_adults_marray
@@ -178,6 +180,24 @@ count_fledglings <- function(df) {
 
 n_offspring_df <- count_fledglings(phendat)
 
+n_offspring_df_elev <- n_offspring_df %>%
+  left_join(sitedat %>% select(site, Mean.Elev), by = "site")
+
+ggplot(n_offspring_df_elev, aes(x = factor(year), y = fledgling_count, fill = Mean.Elev)) +
+  scale_fill_gradient(low = "white", high = "black") +
+  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 2, width = 0.3, height = 0.3) +
+  #geom_line(aes(group = site, colour = site)) +
+  theme_minimal() +
+  labs(title = "Annual fledgling count by Site",
+       x = "Year",
+       y = "N fledglings",
+       fill = "Elevation") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.x = element_line(color = "gray", size = 0.5)
+  )
+
 J_list <- list()
 for (i in site_codes) {
   J_list[[i]] <- n_offspring_df %>%
@@ -197,6 +217,24 @@ count_broods_surveyed <- function(df) {
 }
 
 broods_surveyed_df <- count_broods_surveyed(occupancy_data)
+
+broods_surveyed_df_elev <- broods_surveyed_df %>%
+  left_join(sitedat %>% select(site, Mean.Elev), by = "site")
+
+ggplot(broods_surveyed_df_elev, aes(x = factor(year), y = brood_count, fill = Mean.Elev)) +
+  scale_fill_gradient(low = "white", high = "black") +
+  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 2, width = 0.3, height = 0.3) +
+  #geom_line(aes(group = site, colour = site)) +
+  theme_minimal() +
+  labs(title = "Annual broods surveyed by Site",
+       x = "Year",
+       y = "N broods",
+       fill = "Elevation") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.x = element_line(color = "gray", size = 0.5)
+  )
 
 R_list <- list()
 for (i in site_codes) {
