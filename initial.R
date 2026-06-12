@@ -27,6 +27,12 @@ length(unique(bludat$ID))
 bludat$ID[duplicated(bludat$ID)]
 #2230 entries, 5 of which not unique
 
+#keeping just the last brood (completed)
+bludat <- bludat[!duplicated(bludat$ID, fromLast = TRUE), ]
+
+bludat$ID[duplicated(bludat$ID)]
+#success!
+
 #---- occupancy plots ----
 
 #creating a loop to create a df containing occupancy by site 

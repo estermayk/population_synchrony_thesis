@@ -2,6 +2,7 @@ library(rstan)
 library(tidyverse)
 library(ggplot2)
 library(patchwork)
+library(viridis)
 
 # Exercise3: Transform blue tit data into similar format used here for hoopoe dataset, namely:
 
@@ -144,11 +145,12 @@ max_occupancy_df <- max_occupancy(occupancy_data)
 max_occupancy_df_elev <- max_occupancy_df %>%
   left_join(sitedat %>% select(site, Mean.Elev), by = "site")
 
-ggplot(max_occupancy_df_elev, aes(x = factor(year), y = max_occupancy, fill = Mean.Elev)) +
-  scale_fill_gradient(low = "white", high = "black") +
-  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+ggplot(max_occupancy_df_elev, aes(x = factor(year), y = max_occupancy, fill = Mean.Elev, colour = Mean.Elev)) +
+  scale_colour_gradient(viridis(plasma)) +
+  scale_fill_gradient(viridis(plasma)) +
+  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
   geom_jitter(shape = 21, size = 2, width = 0.3, height = 0.3) +
-  #geom_line(aes(group = site, colour = site)) +
+  geom_line(aes(group = site, colour = Mean.Elev)) +
   theme_minimal() +
   labs(title = "Annual Occupancy by Site",
        x = "Year",
@@ -158,6 +160,10 @@ ggplot(max_occupancy_df_elev, aes(x = factor(year), y = max_occupancy, fill = Me
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
   )
+
+occupancy_p
+
+?viridis
 
 y_list <- list()
 for (i in site_codes) {

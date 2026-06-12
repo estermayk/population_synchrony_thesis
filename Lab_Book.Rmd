@@ -1,0 +1,372 @@
+---
+title: "Synchrony_Dissertation_Process"
+author: "Ester Kirby"
+date: "2026-06-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Synchrony Dissertation Process
+
+This is an RMarkdown serving as a data management plan and lab book for a dissertation undertaken in partial fulfillment of an MSc in Ecology, Evolution and Biodiversity (2026). 
+
+``` {r, echo=FALSE}
+library(lme4)
+library(insight)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(viridis)
+library(rstan)
+```
+
+```{r Importing and Cleaning Data}
+#importing bird phenology dataframe
+phendat <- read.csv("data/Bird_Phenology.csv")
+
+#importing site details dataframe
+sitedat <- read.csv("data/Site_Details.csv")
+
+#importing adults dataframe
+adults <- read.csv("data/Adults.csv")
+
+#importing nestlings dataframe
+nestlings <- read.csv("data/Nestlings.csv")
+
+#changing -999s (0s in fledgling success caused by predation) to 0s
+phendat$suc[phendat$suc == "-999"] <- 0
+
+#checking for duplicates
+phendat$ID <- as.factor(paste(phendat$year, phendat$site, phendat$box, sep = "_")) 
+length(phendat$ID)
+length(unique(phendat$ID))
+phendat$ID[duplicated(phendat$ID)]
+#2230 entries, 5 of which not unique
+
+#keeping just the last brood (completed)
+phendat <- phendat[!duplicated(phendat$ID, fromLast = TRUE), ]
+
+phendat$ID[duplicated(phendat$ID)]
+#success!
+
+#removing non focal species
+bludat <- phendat[phendat$species == "bluti",]
+```
+
+Above, I imported the relevant dataframes from the phenoweb project. 
+I then changed -999s in column 'suc' to 0s in phendat as these indicated 0 success due to predation. This is because predation is impacted by and has impacts on synchrony, and therefore is biologically significant and does not need to be flagged as anomalous. The only concern is if the nestboxes cause a change in predation probability from natural levels - a literature search will be conducted to advise on this. 
+I then identified duplicates, of which there were only 5. These were caused by birds abandoning nests and then new broods taking. I removed the first broods from the data as they did not represent proper brood attempts.
+Finally, I created a separate dataframe containing only rows representing occupation by blue tits. 
+
+```{r pressure, echo=FALSE}
+
+#very early model attempt on fledgling success
+bludat$site_year <- as.factor(paste(bludat$site, bludat$year, sep = "_")) 
+sucmod <- lmer(suc ~ (1|year) + (1|site) + (1|site_year), data = bludat) 
+summary(sucmod)
+
+get_variance_intercept(sucmod)
+
+#extracting the variance components 
+var_components <- VarCorr(sucmod)
+var_intercept_site_year <- attr(var_components$site_year, "stddev")^2
+var_intercept_site <- attr(var_components$site, "stddev")^2
+var_intercept_year <- attr(var_components$year, "stddev")^2
+
+#a crude look at ICC synchrony from the model 
+sucsync <- var_intercept_year/(var_intercept_year + var_intercept_site_year)
+
+sucsync
+```
+
+##Hoopoe Integrated Population Model from Kery and Schaub 2012
+#Translated to Rstan by Sanjana 
+
+```{r, echo=FALSE}
+# Simulate datasets for two more sites
+nsites <- 3
+nyears <- 9
+
+# Note: CJS model is specified as a multinomial likelihood (i.e. individual capture histories are collapsed into m-arrays) and were not specified as individual-level state-space formulation I had done previously for blue tits
+# More details on m-arrays and code to convert individual capture histories to m-arrays can be found in Chapter 7.10 in book, "Bayesian Population Analysis using WinBUGS --- A Hierarchical Perspective" (2012) by Marc Kéry and Michael Schaub.
+
+# All site-1 associated data is the hoopoe dataset from Chapter 11, Kery & Schaub 2012 book
+# Capture-recapture data: m-array of juveniles and adults (these are males and females together)
+marray_j_site1 <- structure(
+  c(15, 0, 0, 0, 0, 0, 0, 0, 3, 34, 0, 0, 0, 0, 0, 0,
+    0, 9, 56, 0, 0, 0, 0, 0, 0, 1, 8, 48, 0, 0, 0, 0, 0, 0, 1, 3,
+    45, 0, 0, 0, 0, 0, 0, 1, 13, 27, 0, 0, 0, 0, 0, 0, 2, 7, 37,
+    0, 0, 0, 0, 0, 0, 0, 3, 39, 198, 287, 455, 518, 463, 493, 434, 405),
+  .Dim = 8:9)
+
+marray_a_site1 <- structure(
+  c(14, 0, 0, 0, 0, 0, 0, 0, 2, 22, 0, 0, 0, 0, 0, 0,
+    0, 4, 34, 0, 0, 0, 0, 0, 0, 0, 2, 51, 0, 0, 0, 0, 0, 0, 0, 3,
+    45, 0, 0, 0, 0, 0, 0, 0, 3, 44, 0, 0, 0, 0, 0, 0, 0, 3, 48, 0,
+    0, 0, 0, 0, 0, 0, 2, 51, 43, 44, 79, 94, 118, 113, 99, 90),
+  .Dim = 8:9)
+
+y_site1 <- c(32, 42, 64, 85, 82, 78, 73, 69, 79) # Population count data  (the maximal number of simultaneously occupied nest boxes in each year)
+J_site1 <- c(189, 274, 398, 538, 520, 476, 463, 438) # Number of offspring
+R_site1 <- c(28, 36, 57, 77, 81, 83, 77, 72) # Number of surveyed broods
+
+# Site 2 
+set.seed(42)
+y_site2 <- round(y_site1 * 0.60 * exp(rnorm(nyears, 0, 0.10)))
+J_site2 <- round(J_site1 * 0.60 * exp(rnorm(nyears - 1, 0, 0.10)))
+R_site2 <- round(R_site1 * 0.60 * exp(rnorm(nyears - 1, 0, 0.10)))
+
+view(y_site2)
+
+marray_j_site2 <- structure(
+  c(12, 0, 0, 0, 0, 0, 0, 0, 2, 28, 0, 0, 0, 0, 0, 0,
+    0, 7, 45, 0, 0, 0, 0, 0, 0, 2, 6, 38, 0, 0, 0, 0, 0, 0, 2, 4,
+    36, 0, 0, 0, 0, 0, 0, 1, 10, 22, 0, 0, 0, 0, 0, 0, 1, 5, 29,
+    0, 0, 0, 0, 0, 0, 0, 2, 31, 210, 265, 430, 490, 440, 470, 410, 385),
+  .Dim = 8:9)
+
+marray_a_site2 <- structure(
+  c(11, 0, 0, 0, 0, 0, 0, 0, 3, 19, 0, 0, 0, 0, 0, 0,
+    0, 3, 29, 0, 0, 0, 0, 0, 0, 0, 3, 44, 0, 0, 0, 0, 0, 0, 0, 2,
+    38, 0, 0, 0, 0, 0, 0, 0, 2, 38, 0, 0, 0, 0, 0, 0, 0, 2, 41, 0,
+    0, 0, 0, 0, 0, 0, 1, 44, 40, 38, 68, 82, 105, 100, 88, 78),
+  .Dim = 8:9)
+
+# Site 3 
+set.seed(43)
+y_site3 <- round(y_site1 * 1.20 * exp(rnorm(nyears, 0, 0.12)))
+J_site3 <- round(J_site1 * 1.20 * exp(rnorm(nyears - 1, 0, 0.12)))
+R_site3 <- round(R_site1 * 1.20 * exp(rnorm(nyears - 1, 0, 0.12)))
+
+marray_j_site3 <- structure(
+  c(18, 0, 0, 0, 0, 0, 0, 0, 4, 40, 0, 0, 0, 0, 0, 0,
+    0, 11, 63, 0, 0, 0, 0, 0, 0, 1, 10, 55, 0, 0, 0, 0, 0, 0, 1, 4,
+    52, 0, 0, 0, 0, 0, 0, 2, 15, 31, 0, 0, 0, 0, 0, 0, 2, 9, 43,
+    0, 0, 0, 0, 0, 0, 0, 4, 45, 185, 305, 478, 540, 480, 510, 452, 420),
+  .Dim = 8:9)
+
+marray_a_site3 <- structure(
+  c(16, 0, 0, 0, 0, 0, 0, 0, 2, 25, 0, 0, 0, 0, 0, 0,
+    0, 5, 39, 0, 0, 0, 0, 0, 0, 0, 2, 58, 0, 0, 0, 0, 0, 0, 0, 4,
+    51, 0, 0, 0, 0, 0, 0, 0, 4, 50, 0, 0, 0, 0, 0, 0, 0, 4, 54, 0,
+    0, 0, 0, 0, 0, 0, 3, 57, 46, 50, 88, 102, 128, 120, 108, 97),
+  .Dim = 8:9)
+
+# Combine data from all sites
+# Combining pop counts
+(y_mat <- rbind(y_site1, y_site2, y_site3))
+
+# Combining offpsring numbers (J) and surveyed broods (R)
+# J, R: [nsites, nyears-1] format
+(J_mat <- rbind(J_site1, J_site2, J_site3))
+(R_mat <- rbind(R_site1, R_site2, R_site3))
+
+# Combining recapture histories (m-array format)
+# marray: [nsites, nyears-1, nyears] format
+marray_j_3d <- array(NA_integer_, dim = c(nsites, nyears - 1, nyears))
+marray_a_3d <- array(NA_integer_, dim = c(nsites, nyears - 1, nyears))
+
+marray_j_3d[1,,] <- marray_j_site1
+marray_j_3d[2,,] <- marray_j_site2
+marray_j_3d[3,,] <- marray_j_site3
+
+marray_a_3d[1,,] <- marray_a_site1
+marray_a_3d[2,,] <- marray_a_site2
+marray_a_3d[3,,] <- marray_a_site3
+
+# Put together all data to feed into stan model
+stan_data <- list(
+  nyears    = nyears,
+  nsites    = nsites,
+  y         = y_mat,      
+  J         = J_mat,      
+  R         = R_mat,        
+  marray_j  = marray_j_3d, 
+  marray_a  = marray_a_3d  
+)
+
+# Give Stan parameters to estimate
+params <- c(
+  "phij", "phia", "f", "omega", "p",
+  "mphij", "mphia", "mfec", "mim",
+  "lambda", "mlam",
+  "sig_phij",      "sig_phia",      "sig_fec",      "sig_im",
+  "sig_site_phij", "sig_site_phia", "sig_site_fec", "sig_site_im",
+  "sig_sy_phij",   "sig_sy_phia",   "sig_sy_fec",   "sig_sy_im",
+  "N1", "NadSurv", "Nadimm", "Ntot",
+  "var_phij_year", "var_phij_siteyear", "icc_phij",
+  "var_phia_year", "var_phia_siteyear", "icc_phia",
+  "var_fec_year", "var_fec_siteyear", "icc_fec",
+  "var_im_year", "var_im_siteyear", "icc_im"
+)
+
+# Setting stan model options
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+
+# MCMC settings
+ni <- 20000   
+nb <- 10000   
+nt <- 5       
+nc <- 4
+
+## Initial values
+inits <- lapply(1:nc, function(i) {
+  list(l_mphij = rnorm(1, 0.2, 0.5),
+       l_mphia = rnorm(1, 0.2, 0.5),
+       l_mfec = rnorm(1, 0.2, 0.5),
+       l_mim = rnorm(1, 0.2, 0.5),
+       l_p = rnorm(1, 0.2, 1),
+       sig_phij = runif(1, 0.1, 10),
+       sig_phia = runif(1, 0.1, 10),
+       sig_fec = runif(1, 0.1, 10),
+       sig_im = runif(1, 0.1, 10),
+       sig_site_phij = runif(1, 0.1, 10),
+       sig_site_phia = runif(1, 0.1, 10),
+       sig_site_fec = runif(1, 0.1, 10),
+       sig_site_im = runif(1, 0.1, 10),
+       sig_sy_phij = runif(1, 0.1, 10),
+       sig_sy_phia = runif(1, 0.1, 10),
+       sig_sy_fec = runif(1, 0.1, 10),
+       sig_sy_im = runif(1, 0.1, 10),
+       N1      = lapply(1:nsites, function(s) round(runif(nyears,  1, 50))),
+       NadSurv = lapply(1:nsites, function(s) round(runif(nyears,  5, 50))),
+       Nadimm  = lapply(1:nsites, function(s) round(runif(nyears,  1, 50)))
+)})
+
+# Run stan model
+ipm_hoopoe <- stan(
+  file    = "ipm_hoopoe.stan",
+  data    = stan_data,
+  init    = inits,
+  pars    = params,
+  chains  = nc,
+  iter    = ni,
+  warmup  = nb,
+  thin    = nt,
+  seed    = 2,
+  control = list(
+    adapt_delta   = 0.99,
+    max_treedepth = 15    
+  )
+)
+
+# Print stan model output
+print(ipm_hoopoe,
+      pars = c("mphij", "mphia", "mfec", "mim",
+               "sig_phij",      "sig_phia",      "sig_fec",      "sig_im",
+               "sig_site_phij", "sig_site_phia", "sig_site_fec", "sig_site_im",
+               "sig_sy_phij",   "sig_sy_phia",   "sig_sy_fec",   "sig_sy_im",
+               "mlam",   "var_phij_year", "var_phij_siteyear", "icc_phij",
+               "var_phia_year", "var_phia_siteyear", "icc_phia",
+               "var_fec_year", "var_fec_siteyear", "icc_fec",
+               "var_im_year", "var_im_siteyear", "icc_im"),
+      digits = 3)
+
+# Get posterior distributions
+posterior_ipm <- as.data.frame(ipm_hoopoe)
+
+# extract summary (mean + 95% CrI) for parameters
+extract_summary <- function(posterior, pattern) {
+  cols <- grep(pattern, names(posterior), value = TRUE)
+  data.frame(
+    param = cols,
+    mean  = colMeans(posterior[, cols, drop = FALSE]),
+    lower = apply(posterior[, cols, drop = FALSE], 2, quantile, 0.025),
+    upper = apply(posterior[, cols, drop = FALSE], 2, quantile, 0.975)
+  )
+}
+
+# Get nyears and nsites
+nyears  <- stan_data$nyears
+nsites  <- stan_data$nsites
+years   <- 1:nyears
+years_m1 <- 1:(nyears - 1)  # for parameters indexed over nyears-1
+
+site_labels <- paste0("Site ", 1:nsites)
+
+# Estimated Ntot per site per year
+ntot_list <- lapply(1:nsites, function(s) {
+  pattern <- paste0("Ntot\\[", s, ",")
+  df <- extract_summary(posterior_ipm, pattern)
+  df$year <- years
+  df$site <- site_labels[s]
+  df
+})
+ntot_df <- bind_rows(ntot_list)
+
+# Observed counts per site per year
+obs_counts <- expand.grid(site = site_labels, year = years) %>%
+  arrange(site, year) %>%
+  mutate(observed = as.vector(t(stan_data$y)))  # y is [nsites, nyears]
+
+# Merge both dfs
+ntot_df <- left_join(ntot_df, obs_counts, by = c("site", "year"))
+
+# Plot
+p_ntot <- ggplot(ntot_df, aes(x = year)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "steelblue", alpha = 0.25) +
+  geom_line(aes(y = mean, colour = "Estimated Ntot"), linewidth = 0.9) +
+  geom_point(aes(y = mean, colour = "Estimated Ntot"), size = 1.5) +
+  geom_line(aes(y = observed, colour = "Observed count"),
+            linewidth = 0.9, linetype = "dashed") +
+  geom_point(aes(y = observed, colour = "Observed count"), size = 1.5) +
+  scale_colour_manual(values = c("Estimated Ntot" = "steelblue",
+                                 "Observed count"  = "firebrick")) +
+  facet_wrap(~ site, scales = "free_y") +
+  labs(title = "Population size", x = "Year", y = "N",
+       colour = NULL) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks=8)
+
+p_ntot
+
+# Exercises for Ester -
+
+# Exercise1: Plot and investigate temporal trends in other demographic parameters (survival, productivity, immigration, population growth rate etc) across the different sites (doing this will be handy for blue tit data analysis)
+
+#productivity/fecundity 
+# Estimated f per site per year
+f_list <- lapply(1:nsites, function(s) {
+  pattern <- paste0("f\\[", s, ",")
+  df <- extract_summary(posterior_ipm, pattern)
+  df$year <- years_m1
+  df$site <- site_labels[s]
+  df
+})
+f_est <- bind_rows(f_list)
+
+# Observed f per site per year
+obs_f <- expand.grid(site = site_labels, year = years_m1) %>%
+  arrange(site, year) %>%
+  mutate(observed = as.vector(t(stan_data$J / stan_data$R)))
+
+# Merge both dfs
+f_df <- left_join(f_est, obs_f, by = c("site", "year"))
+
+# Plot
+p_f <- ggplot(f_df, aes(x = year)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "steelblue", alpha = 0.25) +
+  geom_line(aes(y = mean, colour = "Estimated f"), linewidth = 0.9) +
+  geom_point(aes(y = mean, colour = "Estimated f"), size = 1.5) +
+  geom_line(aes(y = observed, colour = "Observed f"),
+            linewidth = 0.9, linetype = "dashed") +
+  geom_point(aes(y = observed, colour = "Observed f"), size = 1.5) +
+  scale_colour_manual(values = c("Estimated f" = "steelblue",
+                                 "Observed f"  = "firebrick")) +
+  facet_wrap(~ site, scales = "free_y") +
+  labs(title = "Fecundity per Nest", x = "Year", y = "N Fledglings/female",
+       colour = NULL) +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks=8)
+
+p_f
+```
+
+
