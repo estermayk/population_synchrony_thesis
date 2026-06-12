@@ -1,3 +1,8 @@
+library(rstan)
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+
 # Exercise3: Transform blue tit data into similar format used here for hoopoe dataset, namely:
 
 
@@ -52,6 +57,8 @@ ALN_adults_CH_matrix <- (apply(ALN_adults_CH_matrix, 2, as.numeric))
 
 ALN_adults_marray <- marray(ALN_adults_CH_matrix)
 
+ALN_adults_marray
+
 #making a function to iterate over the sites
 create_marray <- function(site_code, data) {
   site_data <- data[data$site == site_code,]
@@ -83,7 +90,6 @@ site_codes <- unique(adults$site)
 marray_list <- lapply(site_codes, function(site) create_marray(site, adults))
 
 names(marray_list) <- site_codes
-
 
 # b) Also for each site, obtain observed population count (maximal number of simultaneously occupied nest boxes in each year), number of offspring and number of surveyed broods and investigate temporal trends.
 
