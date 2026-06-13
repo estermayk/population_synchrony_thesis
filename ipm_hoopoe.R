@@ -205,6 +205,10 @@ ipm_hoopoe <- stan(
   )
 )
 
+rds_file_path <- "ipm_hoopoe.rds"
+
+saveRDS(ipm_hoopoe, rds_file_path)
+
 # Print stan model output
 print(ipm_hoopoe,
       pars = c("mphij", "mphia", "mfec", "mim",
