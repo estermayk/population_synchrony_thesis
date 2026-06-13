@@ -24,7 +24,7 @@ library(rstan)
 library(patchwork)
 ```
 
-```{r Importing and Cleaning Data}
+```{r Importing and Cleaning Data, echo=FALSE}
 #importing bird phenology dataframe
 phendat <- read.csv("data/Bird_Phenology.csv")
 
@@ -63,7 +63,7 @@ I then changed -999s in column 'suc' to 0s in phendat as these indicated 0 succe
 I then identified duplicates, of which there were only 5. These were caused by birds abandoning nests and then new broods taking. I removed the first broods from the data as they did not represent proper brood attempts.
 Finally, I created a separate dataframe containing only rows representing occupation by blue tits. 
 
-```{r clutch swap treatment}
+```{r clutch swap treatment, echo=FALSE}
 bludatswap <- bludat %>%
   mutate(clutch.swap.treatment = ifelse(clutch.swap.treatment %in% 1:9, "swap", clutch.swap.treatment))
 
@@ -105,7 +105,7 @@ tapply(bludatswap$suc, bludatswap$clutch.swap.treatment, mean, na.rm=TRUE)
 
 Above, I isolated the clutch swap experiment years and ran a linear mixed model to look for variance attributed to clutch swap treatment as opposed to unmanipulated clutches. This allowed me to decide whether to include these years, just the unmanipulated broods, or exclude entirely. Overall variance attributed to treatment was low compared to residual, and mean success was similar between unmanipulated and swapped clutches. Therefore, it appears the effect of the clutch swap experiment on fledgling success was negligible and these years can be included in full. 
 
-```{r fledgling success initial glmm}
+```{r fledgling success initial glmm, echo=FALSE}
 
 #very early model attempt on fledgling success
 bludat$site_year <- as.factor(paste(bludat$site, bludat$year, sep = "_")) 
@@ -419,7 +419,7 @@ p_f <- ggplot(f_df, aes(x = year)) +
 p_f
 ```
 
-```{r hoopoe plotting - Sanjanas exercises}
+```{r hoopoe plotting - Sanjanas exercises, echo=FALSE}
 # Exercise1: Plot and investigate temporal trends in other demographic parameters (survival, productivity, immigration, population growth rate etc) across the different sites (doing this will be handy for blue tit data analysis)
 
 #productivity/fecundity 
@@ -752,7 +752,7 @@ marray <- function(CH){
 }
 ```
 
-``` {r ALN M-Array}
+``` {r ALN M-Array, echo=FALSE}
 
 ALN_adults <- adults[(adults$site == "ALN"),]
 
