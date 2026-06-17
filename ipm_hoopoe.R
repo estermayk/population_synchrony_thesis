@@ -209,6 +209,8 @@ rds_file_path <- "ipm_hoopoe.rds"
 
 saveRDS(ipm_hoopoe, rds_file_path)
 
+ipm_hoopoe <- readRDS("ipm_hoopoe.rds")
+
 # Print stan model output
 print(ipm_hoopoe,
       pars = c("mphij", "mphia", "mfec", "mim",
@@ -281,6 +283,12 @@ p_ntot <- ggplot(ntot_df, aes(x = year)) +
 p_ntot
 
 # Exercises for Ester -
+
+print(dim(y_mat))
+print(dim(J_mat))
+print(dim(R_mat))
+print(dim(marray_j_3d))
+print(dim(marray_a_3d))
 
 # Exercise1: Plot and investigate temporal trends in other demographic parameters (survival, productivity, immigration, population growth rate etc) across the different sites (doing this will be handy for blue tit data analysis)
 
@@ -449,7 +457,7 @@ rates_plots <- (p_ntot | p_lambda | p_f) / (p_phi | p_Nadimm)
 
 rates_plots
 
-ggsave("rates_plot.png", plot = rates_plots)
+ggsave("figs/rates_plot.png", plot = rates_plots)
 
 # Exercise2: Plot and investigate posterior distributions of random effect variances and spatial synchrony (ICCs) for all demographic parameters (doing this will be handy for blue tit data analysis)
 
@@ -589,4 +597,4 @@ icc_var_plots <- (var_phia_siteyear_p | icc_phia_p) / (var_phij_siteyear_p | icc
 
 icc_var_plots
 
-ggsave("icc_var_plots.png", plot = icc_var_plots)
+ggsave("figs/icc_var_plots.png", plot = icc_var_plots)

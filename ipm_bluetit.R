@@ -99,6 +99,8 @@ names(marray_list) <- site_codes
 #max occupancy
 phendat$ID <- as.factor(paste(phendat$year, phendat$site, phendat$box, sep = "_")) 
 phendat$suc[phendat$suc == "-999"] <- 0
+phendat <- phendat[!duplicated(phendat$ID, fromLast = TRUE), ]
+
 ord_dates_phendat <- select(phendat, c('year', 'site', 'ID', 'n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 'cs', 'fki', 'hatching_first_recorded', 'v1date', 'v2date'))
 
 
@@ -142,28 +144,27 @@ max_occupancy <- function(df) {
 
 max_occupancy_df <- max_occupancy(occupancy_data)
 
-max_occupancy_df_elev <- max_occupancy_df %>%
-  left_join(sitedat %>% select(site, Mean.Elev), by = "site")
+max_occupancy_df_lat <- max_occupancy_df %>%
+  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
 
-ggplot(max_occupancy_df_elev, aes(x = factor(year), y = max_occupancy, fill = Mean.Elev, colour = Mean.Elev)) +
-  scale_colour_gradient(viridis(plasma)) +
-  scale_fill_gradient(viridis(plasma)) +
+occupancy_p <- ggplot(max_occupancy_df_lat, aes(x = factor(year), y = max_occupancy, fill = Mean.Lat, colour = Mean.Lat)) +
+  scale_colour_gradient(high = 'purple3', low = 'orange') +
+  scale_fill_gradient(high = 'purple3', low = 'orange') +
   #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
-  geom_jitter(shape = 21, size = 2, width = 0.3, height = 0.3) +
-  geom_line(aes(group = site, colour = Mean.Elev)) +
+  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
+  geom_line(aes(group = site, colour = Mean.Lat)) +
   theme_minimal() +
+  scale_y_continuous(n.breaks = 9) +
   labs(title = "Annual Occupancy by Site",
        x = "Year",
        y = "Occupancy",
-       fill = "Elevation") +
+       fill = "Mean Latitude",
+       colour = 'Mean Latitude') +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
   )
 
-occupancy_p
-
-?viridis
 
 y_list <- list()
 for (i in site_codes) {
@@ -186,19 +187,21 @@ count_fledglings <- function(df) {
 
 n_offspring_df <- count_fledglings(phendat)
 
-n_offspring_df_elev <- n_offspring_df %>%
-  left_join(sitedat %>% select(site, Mean.Elev), by = "site")
+n_offspring_df_lat <- n_offspring_df %>%
+  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
 
-ggplot(n_offspring_df_elev, aes(x = factor(year), y = fledgling_count, fill = Mean.Elev)) +
-  scale_fill_gradient(low = "white", high = "black") +
-  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
-  geom_jitter(shape = 21, size = 2, width = 0.3, height = 0.3) +
-  #geom_line(aes(group = site, colour = site)) +
+n_fledge_p <- ggplot(n_offspring_df_lat, aes(x = factor(year), y = fledgling_count, fill = Mean.Lat, colour = Mean.Lat)) +
+  scale_colour_gradient(high = 'purple3', low = 'orange') +
+  scale_fill_gradient(high = 'purple3', low = 'orange') +
+  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
+  geom_line(aes(group = site, colour = Mean.Lat)) +
   theme_minimal() +
   labs(title = "Annual fledgling count by Site",
        x = "Year",
        y = "N fledglings",
-       fill = "Elevation") +
+       fill = "Mean Latitude",
+       colour = "Mean Latitude") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
@@ -224,19 +227,21 @@ count_broods_surveyed <- function(df) {
 
 broods_surveyed_df <- count_broods_surveyed(occupancy_data)
 
-broods_surveyed_df_elev <- broods_surveyed_df %>%
-  left_join(sitedat %>% select(site, Mean.Elev), by = "site")
+broods_surveyed_df_lat <- broods_surveyed_df %>%
+  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
 
-ggplot(broods_surveyed_df_elev, aes(x = factor(year), y = brood_count, fill = Mean.Elev)) +
-  scale_fill_gradient(low = "white", high = "black") +
-  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
-  geom_jitter(shape = 21, size = 2, width = 0.3, height = 0.3) +
-  #geom_line(aes(group = site, colour = site)) +
+broods_p <- ggplot(broods_surveyed_df_lat, aes(x = factor(year), y = brood_count, fill = Mean.Lat, colour = Mean.Lat)) +
+  scale_colour_gradient(high = 'purple3', low = 'orange') +
+  scale_fill_gradient(high = 'purple3', low = 'orange') +
+  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
+  geom_line(aes(group = site, colour = Mean.Lat)) +
   theme_minimal() +
   labs(title = "Annual broods surveyed by Site",
        x = "Year",
        y = "N broods",
-       fill = "Elevation") +
+       fill = "Mean Latitude",
+       colour = "Mean Latitude") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
@@ -250,6 +255,7 @@ for (i in site_codes) {
     as.list()
 }
 
+(occupancy_p / broods_p / n_fledge_p)
 
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
 
@@ -292,6 +298,9 @@ R_mat_bt <- R_mat_bt %>%
   rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
   mutate(across(everything(), ~ replace_na(.x, 0)))
 
+#Y - pop counts (max occ)
+#J - nestling counts
+#R - surveyed broods
 y_mat_bt <- column_to_rownames(y_mat_bt, var = "site")
 J_mat_bt <- column_to_rownames(J_mat_bt, var = "site")
 R_mat_bt <- column_to_rownames(R_mat_bt, var = "site")

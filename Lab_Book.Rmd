@@ -416,7 +416,7 @@ p_f <- ggplot(f_df, aes(x = year)) +
   theme(legend.position = "bottom") +
   scale_x_continuous(n.breaks=8)
 
-p_f
+#p_f
 ```
 
 ```{r hoopoe plotting - Sanjanas exercises, echo=FALSE}
@@ -782,3 +782,275 @@ ALN_adults_marray
 ```
 
 The M-array above, generated from capture histories above the m-array using Kery and Schaub's marray function, shows individual capture histories at site 'ALN' collapsed into, on the diagonal, individuals marked and released on the nth occasion and recaptured on the n+1th occasion. The next column over on the same row shows individuals released on the nth occasion and recaptured on the n+2nd occasion. The far right column represents individuals marked and never recaptured. This is the format the IPM will take for the CMR portion of the model to estimate apparent survival. 
+
+```{r creating m-array list for all sites, echo=FALSE}
+create_marray <- function(site_code, data) {
+  site_data <- data[data$site == site_code,]
+  
+  capture_history <- data.frame(individuals = unique(site_data$ring))
+  site_years <- 2014:2025  
+  #change the above line to sort(unique(site_data$year))
+  for (year in site_years) {
+    capture_history[[as.character(year)]] <- NA
+  }
+  
+  for (i in 1:nrow(capture_history)) {
+    individual <- capture_history$individuals[i]
+    capture_years <- unique(site_data$year[site_data$ring == individual])
+    capture_history[i, as.character(capture_years)] <- 1
+  }
+  
+  capture_history[is.na(capture_history)] <- 0
+  
+  capture_history_matrix <- as.matrix(capture_history[,-1])
+  capture_history_matrix <- apply(capture_history_matrix, 2, as.numeric)
+  
+  marray_result <- marray(capture_history_matrix)
+  return(marray_result)
+}
+
+site_codes <- unique(adults$site)
+
+marray_list <- lapply(site_codes, function(site) create_marray(site, adults))
+
+```
+
+##Plotting IPM inputs
+
+The IPM takes population size data - in the form of maximum occupancy - as y_mat, the number of successful fledglings at each site each year - as J_mat, and the number of broods surveyed at each site in each year - as R_mat. These are plotted below:
+
+```{r, echo=FALSE}
+
+names(marray_list) <- site_codes
+
+#max occupancy
+phendat$ID <- as.factor(paste(phendat$year, phendat$site, phendat$box, sep = "_")) 
+phendat$suc[phendat$suc == "-999"] <- 0
+phendat <- phendat[!duplicated(phendat$ID, fromLast = TRUE), ]
+
+ord_dates_phendat <- select(phendat, c('year', 'site', 'ID', 'n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 'cs', 'fki', 'hatching_first_recorded', 'v1date', 'v2date'))
+
+
+transform_dates <- function(df) {
+  date_columns <- 70:180
+  occupancy_df <- matrix(0, ncol = length(date_columns), nrow = nrow(df))
+  colnames(occupancy_df) <- as.character(date_columns)
+  
+  for (i in 1:nrow(df)) {
+    dates <- suppressWarnings(as.numeric(df[i, c('n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 
+                                                 'cs', 'fki', 'hatching_first_recorded', 'v1date', 
+                                                 'v2date')]))    
+    date_range <- dates[!is.na(dates)]
+    if (length(date_range) > 0) {
+      min_date <- max(min(date_range), 70)
+      max_date <- min(max(date_range), 180)
+      valid_dates <- min_date:max_date
+      valid_dates <- valid_dates[valid_dates %in% date_columns]
+      occupancy_df[i, as.character(valid_dates)] <- 1
+    }
+  }
+  
+  occupancy_df <- as.data.frame(occupancy_df)
+  occupancy_df <- cbind(df[, c('year', 'site', 'ID')], occupancy_df)
+  
+  return(occupancy_df)
+}
+
+occupancy_data <- transform_dates(ord_dates_phendat)
+
+max_occupancy <- function(df) {
+  numeric_columns <- as.character(70:180)
+  df[numeric_columns] <- lapply(df[numeric_columns], as.numeric)
+  results <- df %>%
+    group_by(year, site) %>%
+    summarise(max_occupancy = max(colSums(across(all_of(numeric_columns)), na.rm = TRUE), na.rm = TRUE)) %>%
+    ungroup()
+  
+  return(results)
+}
+
+max_occupancy_df <- max_occupancy(occupancy_data)
+
+max_occupancy_df_lat <- max_occupancy_df %>%
+  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
+
+occupancy_p <- ggplot(max_occupancy_df_lat, aes(x = factor(year), y = max_occupancy, fill = Mean.Lat, colour = Mean.Lat)) +
+  scale_colour_gradient(high = 'purple3', low = 'orange') +
+  scale_fill_gradient(high = 'purple3', low = 'orange') +
+  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
+  geom_line(aes(group = site, colour = Mean.Lat)) +
+  theme_minimal() +
+  scale_y_continuous(n.breaks = 9) +
+  labs(title = "Annual Occupancy by Site",
+       x = "Year",
+       y = "Occupancy",
+       fill = "Mean Latitude",
+       colour = 'Mean Latitude') +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.x = element_line(color = "gray", size = 0.5)
+  )
+
+
+y_list <- list()
+for (i in site_codes) {
+  y_list[[i]] <- max_occupancy_df %>%
+    filter(site == i) %>%
+    select(max_occupancy) %>%
+    as.list()
+}
+
+#number of offspring
+
+count_fledglings <- function(df) {
+  results <- df %>%
+    group_by(year, site) %>%
+    summarise(fledgling_count = sum(suc, na.rm = TRUE)) %>%
+    ungroup()
+  
+  return(results)
+}
+
+n_offspring_df <- count_fledglings(phendat)
+
+n_offspring_df_lat <- n_offspring_df %>%
+  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
+
+n_fledge_p <- ggplot(n_offspring_df_lat, aes(x = factor(year), y = fledgling_count, fill = Mean.Lat, colour = Mean.Lat)) +
+  scale_colour_gradient(high = 'purple3', low = 'orange') +
+  scale_fill_gradient(high = 'purple3', low = 'orange') +
+  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
+  geom_line(aes(group = site, colour = Mean.Lat)) +
+  theme_minimal() +
+  labs(title = "Annual fledgling count by Site",
+       x = "Year",
+       y = "N fledglings",
+       fill = "Mean Latitude",
+       colour = "Mean Latitude") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.x = element_line(color = "gray", size = 0.5)
+  )
+
+J_list <- list()
+for (i in site_codes) {
+  J_list[[i]] <- n_offspring_df %>%
+  filter(site == i) %>%
+  select(fledgling_count) %>%
+  as.list()
+}
+
+count_broods_surveyed <- function(df) {
+  numeric_columns <- as.character(70:180)
+  df[numeric_columns] <- lapply(df[numeric_columns], as.numeric)
+  results <- df %>%
+    group_by(year, site) %>%
+    summarise(brood_count = sum(rowSums(across(all_of(numeric_columns))) > 0, na.rm = TRUE)) %>%    ungroup()
+  
+  return(results)
+}
+
+broods_surveyed_df <- count_broods_surveyed(occupancy_data)
+
+broods_surveyed_df_lat <- broods_surveyed_df %>%
+  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
+
+broods_p <- ggplot(broods_surveyed_df_lat, aes(x = factor(year), y = brood_count, fill = Mean.Lat, colour = Mean.Lat)) +
+  scale_colour_gradient(high = 'purple3', low = 'orange') +
+  scale_fill_gradient(high = 'purple3', low = 'orange') +
+  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
+  geom_line(aes(group = site, colour = Mean.Lat)) +
+  theme_minimal() +
+  labs(title = "Annual broods surveyed by Site",
+       x = "Year",
+       y = "N broods",
+       fill = "Mean Latitude",
+       colour = "Mean Latitude") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.x = element_line(color = "gray", size = 0.5)
+  )
+
+R_list <- list()
+for (i in site_codes) {
+  R_list[[i]] <- broods_surveyed_df %>%
+    filter(site == i) %>%
+    select(brood_count) %>%
+    as.list()
+}
+
+(occupancy_p / broods_p / n_fledge_p)
+
+# Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
+
+y_mat_bt <- rbind(y_list)
+
+y_mat_bt <- as.data.frame(y_mat_bt, stringsAsFactors = FALSE)
+
+y_mat_bt <- y_mat_bt %>%
+  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
+  rowwise() %>%
+  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
+  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
+  unnest_wider(yearly_data, names_sep = "_") %>%
+  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
+  mutate(across(everything(), ~ replace_na(.x, 0)))
+
+J_mat_bt <- rbind(J_list)
+
+J_mat_bt <- as.data.frame(J_mat_bt, stringsAsFactors = FALSE)
+
+J_mat_bt <- J_mat_bt %>%
+  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
+  rowwise() %>%
+  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
+  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
+  unnest_wider(yearly_data, names_sep = "_") %>%
+  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
+  mutate(across(everything(), ~ replace_na(.x, 0)))
+
+R_mat_bt <- rbind(R_list)
+
+R_mat_bt <- as.data.frame(R_mat_bt, stringsAsFactors = FALSE)
+
+R_mat_bt <- R_mat_bt %>%
+  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
+  rowwise() %>%
+  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
+  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
+  unnest_wider(yearly_data, names_sep = "_") %>%
+  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
+  mutate(across(everything(), ~ replace_na(.x, 0)))
+
+#Y - pop counts (max occ)
+#J - nestling counts
+#R - surveyed broods
+y_mat_bt <- column_to_rownames(y_mat_bt, var = "site")
+J_mat_bt <- column_to_rownames(J_mat_bt, var = "site")
+R_mat_bt <- column_to_rownames(R_mat_bt, var = "site")
+```
+
+##IPM data formatting
+
+In the meantime, I'm working my way through the Rstan hoopoe IPM to see where I need to alter it for the blue tit data. I've removed all lines relating to phij as I have not looked at fledgling survival yet. I'm now trying to parse what each chunk is doing so that I can identify where nyears - 1 needs to be changed to nyears (the hoopoe data takes nyears-1 for # of fledglings and also # of broods surveyed, while we have data for these:
+
+```{r Data Formatting, echo=TRUE}
+#blue tit data format
+print(dim(y_mat_bt))
+print(dim(J_mat_bt))
+print(dim(R_mat_bt))
+print(dim(marray_list))
+print("this returns NULL but is a list of 44 m-arrays containing up to 12 years of releases and 11 years of recaptures (n years by n-1 years)")
+
+#Whereas for the hoopoes - which is the format taken by the RStan code
+print(dim(y_mat))
+print(dim(J_mat))
+print(dim(R_mat))
+print(dim(marray_j_3d))
+print(dim(marray_a_3d))
+```
+
+As we can see above, J_mat and R_mat take dimensions (site, nyear-1) in the hoopoe model, whereas for the blue tit data they take (site, nyear). However, for the M-arrays, both Hoopoe and blue tit take (site, nyear-1, nyear). Therefore, some nyear-1s in the stan file need editing to nyear while others need leaving. 
