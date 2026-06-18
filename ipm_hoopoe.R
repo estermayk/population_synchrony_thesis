@@ -290,6 +290,9 @@ print(dim(R_mat))
 print(dim(marray_j_3d))
 print(dim(marray_a_3d))
 
+typeof(marray_a_3d)
+typeof(marray_list)
+
 # Exercise1: Plot and investigate temporal trends in other demographic parameters (survival, productivity, immigration, population growth rate etc) across the different sites (doing this will be handy for blue tit data analysis)
 
 #productivity/fecundity 

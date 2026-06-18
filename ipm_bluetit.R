@@ -94,7 +94,14 @@ marray_list <- lapply(site_codes, function(site) create_marray(site, adults))
 
 names(marray_list) <- site_codes
 
+nsites_bt <- 44
+nyears_bt <- 12
+
+marray_list <- array(unlist(marray_list), dim = c(nsites_bt, nyears_bt - 1, nyears_bt))
+
 # b) Also for each site, obtain observed population count (maximal number of simultaneously occupied nest boxes in each year), number of offspring and number of surveyed broods and investigate temporal trends.
+
+all_combinations <- expand.grid(site = site_codes, year = 2014:2025)
 
 #max occupancy
 phendat$ID <- as.factor(paste(phendat$year, phendat$site, phendat$box, sep = "_")) 
@@ -165,14 +172,9 @@ occupancy_p <- ggplot(max_occupancy_df_lat, aes(x = factor(year), y = max_occupa
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
   )
 
-
-y_list <- list()
-for (i in site_codes) {
-  y_list[[i]] <- max_occupancy_df %>%
-    filter(site == i) %>%
-    select(max_occupancy) %>%
-    as.list()
-}
+max_occupancy_df <- all_combinations %>%
+  left_join(max_occupancy_df, by = c("site", "year")) %>%
+  replace_na(list(max_occupancy = 0))
 
 #number of offspring
 
@@ -207,13 +209,9 @@ n_fledge_p <- ggplot(n_offspring_df_lat, aes(x = factor(year), y = fledgling_cou
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
   )
 
-J_list <- list()
-for (i in site_codes) {
-  J_list[[i]] <- n_offspring_df %>%
-  filter(site == i) %>%
-  select(fledgling_count) %>%
-  as.list()
-}
+n_offspring_df <- all_combinations %>%
+  left_join(n_offspring_df, by = c("site", "year")) %>%
+  replace_na(list(fledgling_count = 0))
 
 count_broods_surveyed <- function(df) {
   numeric_columns <- as.character(70:180)
@@ -247,63 +245,48 @@ broods_p <- ggplot(broods_surveyed_df_lat, aes(x = factor(year), y = brood_count
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
   )
 
-R_list <- list()
+broods_surveyed_df <- all_combinations %>%
+  left_join(broods_surveyed_df, by = c("site", "year")) %>%
+  replace_na(list(brood_count = 0))
+
 for (i in site_codes) {
-  R_list[[i]] <- broods_surveyed_df %>%
-    filter(site == i) %>%
-    select(brood_count) %>%
-    as.list()
+  y_list[[i]] <- max_occupancy_df %>% filter(site == i) %>% arrange(year) %>% pull(max_occupancy)
+  J_list[[i]] <- n_offspring_df   %>% filter(site == i) %>% arrange(year) %>% pull(fledgling_count)
+  R_list[[i]] <- broods_surveyed_df %>% filter(site == i) %>% arrange(year) %>% pull(brood_count)
 }
 
 (occupancy_p / broods_p / n_fledge_p)
 
+
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
 
-y_mat_bt <- rbind(y_list)
+list_to_mat <- function(lst, site_codes, nyears) {
+  mat <- matrix(0, nrow = length(site_codes), ncol = nyears,
+                dimnames = list(site_codes, NULL))
+  for (i in seq_along(site_codes)) {
+    vals <- unlist(lst[[site_codes[i]]])
+    mat[i, seq_along(vals)] <- vals
+  }
+  mat
+}
 
-y_mat_bt <- as.data.frame(y_mat_bt, stringsAsFactors = FALSE)
-
-y_mat_bt <- y_mat_bt %>%
-  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
-  rowwise() %>%
-  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
-  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
-  unnest_wider(yearly_data, names_sep = "_") %>%
-  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
-  mutate(across(everything(), ~ replace_na(.x, 0)))
-
-J_mat_bt <- rbind(J_list)
-
-J_mat_bt <- as.data.frame(J_mat_bt, stringsAsFactors = FALSE)
-
-J_mat_bt <- J_mat_bt %>%
-  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
-  rowwise() %>%
-  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
-  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
-  unnest_wider(yearly_data, names_sep = "_") %>%
-  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
-  mutate(across(everything(), ~ replace_na(.x, 0)))
-
-R_mat_bt <- rbind(R_list)
-
-R_mat_bt <- as.data.frame(R_mat_bt, stringsAsFactors = FALSE)
-
-R_mat_bt <- R_mat_bt %>%
-  pivot_longer(cols = everything(), names_to = "site", values_to = "yearly_data") %>%
-  rowwise() %>%
-  mutate(yearly_data = list(as.numeric(unlist(yearly_data)))) %>%
-  mutate(yearly_data = list(c(yearly_data, rep(NA, 12 - length(yearly_data))))) %>%
-  unnest_wider(yearly_data, names_sep = "_") %>%
-  rename_at(vars(starts_with("yearly_data")), ~ as.character(1:12)) %>%
-  mutate(across(everything(), ~ replace_na(.x, 0)))
+y_mat_bt <- list_to_mat(y_list, site_codes, nyears_bt)
+J_mat_bt <- list_to_mat(J_list, site_codes, nyears_bt)
+R_mat_bt <- list_to_mat(R_list, site_codes, nyears_bt)
 
 #Y - pop counts (max occ)
 #J - nestling counts
 #R - surveyed broods
-y_mat_bt <- column_to_rownames(y_mat_bt, var = "site")
-J_mat_bt <- column_to_rownames(J_mat_bt, var = "site")
-R_mat_bt <- column_to_rownames(R_mat_bt, var = "site")
+
+print(dim(y_mat_bt))
+print(dim(J_mat_bt))
+print(dim(R_mat_bt))
+print(dim(marray_list))
+
+y_mat_bt    <- apply(y_mat_bt,    2, as.integer)
+J_mat_bt <- apply(J_mat_bt[,1:11], 2, as.integer)
+R_mat_bt <- apply(R_mat_bt[,1:11], 2, as.integer)
+marray_list <- apply(marray_list, c(1,2,3), as.integer)
 
 print(dim(y_mat_bt))
 print(dim(J_mat_bt))
@@ -311,8 +294,8 @@ print(dim(R_mat_bt))
 print(dim(marray_list))
 
 stan_data_bt <- list(
-  nyears    = 12,
-  nsites    = 44,
+  nyears    = nyears_bt,
+  nsites    = nsites_bt,
   y         = y_mat_bt,      
   J         = J_mat_bt,      
   R         = R_mat_bt,        
@@ -331,6 +314,12 @@ params_bt <- c(
   "var_fec_year", "var_fec_siteyear", "icc_fec",
   "var_im_year", "var_im_siteyear", "icc_im"
 )
+
+# MCMC settings
+ni <- 20000   
+nb <- 10000   
+nt <- 5       
+nc <- 4
 
 inits_bt <- lapply(1:nc, function(i) {
   list(l_mphia = rnorm(1, 0.2, 0.5),
@@ -351,7 +340,22 @@ inits_bt <- lapply(1:nc, function(i) {
        Nadimm  = lapply(1:nsites, function(s) round(runif(nyears,  1, 50)))
   )})
 
+
 closeAllConnections()
+
+# Setting stan model options
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+set.seed(123)
+
+ipm_bt_debug <- stan(
+  file   = "ipm_bt.stan",
+  data   = stan_data_bt_2,
+  init   = inits_bt[1],   
+  chains = 1,
+  iter   = 10,             
+  seed   = 2
+)
 
 ipm_bt <- stan(
   file    = "ipm_bt.stan",

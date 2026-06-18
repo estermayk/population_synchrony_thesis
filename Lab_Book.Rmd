@@ -1054,3 +1054,25 @@ print(dim(marray_a_3d))
 ```
 
 As we can see above, J_mat and R_mat take dimensions (site, nyear-1) in the hoopoe model, whereas for the blue tit data they take (site, nyear). However, for the M-arrays, both Hoopoe and blue tit take (site, nyear-1, nyear). Therefore, some nyear-1s in the stan file need editing to nyear while others need leaving. 
+
+Following Sanjana's email, I now understand that my data should be formatted the same as the Hoopoe data. This is because the nestling counts and surveyed broods do not exist at t=1, but somewhere between t=t and t=t+1. Therefore, the 12th entry should not exist from the model's perspective as the 12th year is still pre breeding - and from the model perspective, is until the 13th year. I have removed the 12th year below, as well as reformatting each input as.integer: 
+
+```{r, echo=FALSE}
+y_mat_bt    <- apply(y_mat_bt,    2, as.integer)
+J_mat_bt <- apply(J_mat_bt[,1:11], 2, as.integer)
+R_mat_bt <- apply(R_mat_bt[,1:11], 2, as.integer)
+marray_list <- apply(marray_list, c(1,2,3), as.integer)
+
+print(dim(y_mat_bt))
+print(dim(J_mat_bt))
+print(dim(R_mat_bt))
+print(dim(marray_list))
+```
+
+Next, I have repurposed the hoopoe code for the blue tits to fit the model. However, the following is causing issues:
+
+"       N1 = lapply(1:nsites, function(s) round(runif(nyears,  1, 50))),
+       NadSurv = lapply(1:nsites, function(s) round(runif(nyears,  5, 50))),
+       Nadimm  = lapply(1:nsites, function(s) round(runif(nyears,  1, 50)))"
+
+I think this is because some sites have very low occupancy, which is where we draw our Ntot estimate. This then pulls the estimate down towards 0, making it very easy for the number of adults surviving to the next census to exceed the number of adults. This is, naturally, impossible. 

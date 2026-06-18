@@ -60,9 +60,9 @@ data {
   int nyears;
   int nsites;
   array[nsites, nyears] int y;         // counts [site, year]
-  array[nsites, nyears] int J;         // juveniles caught [site, year]
-  array[nsites, nyears] int R;         // adults monitored [site, year]
-  array[nsites, nyears - 1, nyears] int marray_a;
+  array[nsites, nyears - 1] int R;         // adults monitored [site, year]
+  array[nsites, nyears - 1] int J;   // juveniles caught [site, year]
+  array[nsites, nyears - 1, nyears] int marray_a; // [site, occasion, recapture year]
 }
 
 transformed data {
@@ -241,11 +241,11 @@ sig_sy_im     ~ normal(0, 0.5);
       marray_a[s, t] ~ multinomial(pr_a[s, t]);
     }
   }
-
-  //Likelihood (productivity)
   for (s in 1:nsites)
-    J[s] ~ poisson(rho[s]);
+  J[s] ~ poisson(rho[s]);
 }
+
+
 
 generated quantities {
   //Grand mean demographic rates (back-transformed)
