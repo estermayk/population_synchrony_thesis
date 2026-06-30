@@ -135,6 +135,8 @@ var_intercept_year <- attr(var_components$year, "stddev")^2
 #a crude look at ICC synchrony from the model 
 sucsync <- var_intercept_year/(var_intercept_year + var_intercept_site_year)
 
+#what proportion of temporal variance (aka non site_var) is shared between sites 
+
 sucsync
 
 #---- clutch swap variance ----

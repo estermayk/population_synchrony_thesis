@@ -127,6 +127,8 @@ marray_a_3d[1,,] <- marray_a_site1
 marray_a_3d[2,,] <- marray_a_site2
 marray_a_3d[3,,] <- marray_a_site3
 
+view(marray_a_3d)
+
 # Put together all data to feed into stan model
 stan_data <- list(
   nyears    = nyears,

@@ -62,9 +62,58 @@ ALN_adults_marray <- marray(ALN_adults_CH_matrix)
 
 ALN_adults_marray
 
+
+adults <- adults %>%
+  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
+                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
+                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
+                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
+                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
+                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
+                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
+                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
+                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
+                          site == "ART" | site == "MUN"  ~ "J",
+                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
+                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
+
+
+sitedat <- sitedat %>%
+  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
+                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
+                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
+                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
+                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
+                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
+                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
+                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
+                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
+                          site == "ART" | site == "MUN"  ~ "J",
+                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
+                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
+
+
+phendat <- phendat %>%
+  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
+                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
+                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
+                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
+                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
+                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
+                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
+                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
+                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
+                          site == "ART" | site == "MUN"  ~ "J",
+                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
+                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
+
+
+site_codes
+
+
 #making a function to iterate over the sites
 create_marray <- function(site_code, data) {
-  site_data <- data[data$site == site_code,]
+  site_data <- data[data$zone == site_code,]
   
   capture_history <- data.frame(individuals = unique(site_data$ring))
   site_years <- 2014:2025  
@@ -88,27 +137,31 @@ create_marray <- function(site_code, data) {
   return(marray_result)
 }
 
-site_codes <- unique(adults$site)
 
-marray_list <- lapply(site_codes, function(site) create_marray(site, adults))
+site_codes <- unique(adults$zone)
+
+marray_list <- lapply(site_codes, function(zone) create_marray(zone, adults))
 
 names(marray_list) <- site_codes
+dim(marray_list)
 
-nsites_bt <- 44
+nsites_bt <- 12
 nyears_bt <- 12
 
 marray_list <- array(unlist(marray_list), dim = c(nsites_bt, nyears_bt - 1, nyears_bt))
 
+dim(marray_list)
+
 # b) Also for each site, obtain observed population count (maximal number of simultaneously occupied nest boxes in each year), number of offspring and number of surveyed broods and investigate temporal trends.
 
-all_combinations <- expand.grid(site = site_codes, year = 2014:2025)
+all_combinations <- expand.grid(zone = site_codes, year = 2014:2025)
 
 #max occupancy
 phendat$ID <- as.factor(paste(phendat$year, phendat$site, phendat$box, sep = "_")) 
 phendat$suc[phendat$suc == "-999"] <- 0
 phendat <- phendat[!duplicated(phendat$ID, fromLast = TRUE), ]
 
-ord_dates_phendat <- select(phendat, c('year', 'site', 'ID', 'n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 'cs', 'fki', 'hatching_first_recorded', 'v1date', 'v2date'))
+ord_dates_phendat <- select(phendat, c('year', 'site', 'zone', 'ID', 'n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 'cs', 'fki', 'hatching_first_recorded', 'v1date', 'v2date'))
 
 
 transform_dates <- function(df) {
@@ -131,7 +184,7 @@ transform_dates <- function(df) {
   }
   
   occupancy_df <- as.data.frame(occupancy_df)
-  occupancy_df <- cbind(df[, c('year', 'site', 'ID')], occupancy_df)
+  occupancy_df <- cbind(df[, c('year', 'zone', 'ID')], occupancy_df)
   
   return(occupancy_df)
 }
@@ -142,7 +195,7 @@ max_occupancy <- function(df) {
   numeric_columns <- as.character(70:180)
   df[numeric_columns] <- lapply(df[numeric_columns], as.numeric)
   results <- df %>%
-    group_by(year, site) %>%
+    group_by(year, zone) %>%
     summarise(max_occupancy = max(colSums(across(all_of(numeric_columns)), na.rm = TRUE), na.rm = TRUE)) %>%
     ungroup()
   
@@ -151,15 +204,19 @@ max_occupancy <- function(df) {
 
 max_occupancy_df <- max_occupancy(occupancy_data)
 
-max_occupancy_df_lat <- max_occupancy_df %>%
-  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
+#max_occupancy_df_lat <- max_occupancy_df %>%
+  #left_join(sitedat %>% select(site, Mean.Lat), by = "site")
 
-occupancy_p <- ggplot(max_occupancy_df_lat, aes(x = factor(year), y = max_occupancy, fill = Mean.Lat, colour = Mean.Lat)) +
-  scale_colour_gradient(high = 'purple3', low = 'orange') +
-  scale_fill_gradient(high = 'purple3', low = 'orange') +
-  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
-  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
-  geom_line(aes(group = site, colour = Mean.Lat)) +
+occupancy_p <- ggplot(max_occupancy_df, aes(x = factor(year), y = max_occupancy, colour = zone, fill = zone)) +
+  #scale_colour_gradient(high = 'purple3', low = 'orange') +
+  #scale_fill_gradient(high = 'purple3', low = 'orange') +
+  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_path(
+    aes(group = zone), 
+    size = 0.4, alpha = 0.5, 
+    position = position_jitter(width = 0.1, seed = 3922)
+  ) + 
+  #geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, seed = 3922)) +  
   theme_minimal() +
   scale_y_continuous(n.breaks = 9) +
   labs(title = "Annual Occupancy by Site",
@@ -173,14 +230,14 @@ occupancy_p <- ggplot(max_occupancy_df_lat, aes(x = factor(year), y = max_occupa
   )
 
 max_occupancy_df <- all_combinations %>%
-  left_join(max_occupancy_df, by = c("site", "year")) %>%
+  left_join(max_occupancy_df, by = c("zone", "year")) %>%
   replace_na(list(max_occupancy = 0))
 
 #number of offspring
 
 count_fledglings <- function(df) {
   results <- df %>%
-    group_by(year, site) %>%
+    group_by(year, zone) %>%
     summarise(fledgling_count = sum(suc, na.rm = TRUE)) %>%
     ungroup()
   
@@ -189,15 +246,20 @@ count_fledglings <- function(df) {
 
 n_offspring_df <- count_fledglings(phendat)
 
-n_offspring_df_lat <- n_offspring_df %>%
-  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
+#n_offspring_df_lat <- n_offspring_df %>%
+ # left_join(sitedat %>% select(site, Mean.Lat), by = "site")
 
-n_fledge_p <- ggplot(n_offspring_df_lat, aes(x = factor(year), y = fledgling_count, fill = Mean.Lat, colour = Mean.Lat)) +
-  scale_colour_gradient(high = 'purple3', low = 'orange') +
-  scale_fill_gradient(high = 'purple3', low = 'orange') +
-  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
-  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
-  geom_line(aes(group = site, colour = Mean.Lat)) +
+n_fledge_p <- ggplot(n_offspring_df, aes(x = factor(year), y = fledgling_count, fill = zone, colour = zone)) +
+  #scale_colour_gradient(high = 'purple3', low = 'orange') +
+  #scale_fill_gradient(high = 'purple3', low = 'orange') +
+  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
+  geom_path(
+    aes(group = zone), 
+    size = 0.4, alpha = 0.5, 
+    position = position_jitter(width = 0.1, seed = 3922)
+  ) + 
+  geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, seed = 3922)) +  
+  #geom_line(aes(group = site, colour = Mean.Lat)) +
   theme_minimal() +
   labs(title = "Annual fledgling count by Site",
        x = "Year",
@@ -210,14 +272,14 @@ n_fledge_p <- ggplot(n_offspring_df_lat, aes(x = factor(year), y = fledgling_cou
   )
 
 n_offspring_df <- all_combinations %>%
-  left_join(n_offspring_df, by = c("site", "year")) %>%
+  left_join(n_offspring_df, by = c("zone", "year")) %>%
   replace_na(list(fledgling_count = 0))
 
 count_broods_surveyed <- function(df) {
   numeric_columns <- as.character(70:180)
   df[numeric_columns] <- lapply(df[numeric_columns], as.numeric)
   results <- df %>%
-    group_by(year, site) %>%
+    group_by(year, zone) %>%
     summarise(brood_count = sum(rowSums(across(all_of(numeric_columns))) > 0, na.rm = TRUE)) %>%    ungroup()
   
   return(results)
@@ -225,38 +287,51 @@ count_broods_surveyed <- function(df) {
 
 broods_surveyed_df <- count_broods_surveyed(occupancy_data)
 
-broods_surveyed_df_lat <- broods_surveyed_df %>%
-  left_join(sitedat %>% select(site, Mean.Lat), by = "site")
+view(occupancy_data)
 
-broods_p <- ggplot(broods_surveyed_df_lat, aes(x = factor(year), y = brood_count, fill = Mean.Lat, colour = Mean.Lat)) +
-  scale_colour_gradient(high = 'purple3', low = 'orange') +
-  scale_fill_gradient(high = 'purple3', low = 'orange') +
-  #geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
-  geom_jitter(shape = 21, size = 1, width = 0.2, height = 0) +
-  geom_line(aes(group = site, colour = Mean.Lat)) +
+#broods_surveyed_df_lat <- broods_surveyed_df %>%
+ # left_join(sitedat %>% select(site, Mean.Lat), by = "site")
+
+broods_surveyed_df <- broods_surveyed_df %>%
+  group_by(year, zone, brood_count) %>%
+  summarise(count = n()) %>%
+  ungroup()
+
+
+broods_p <- ggplot(broods_surveyed_df, aes(x = factor(year), y = brood_count, colour = zone, fill = zone)) +
+  #scale_colour_gradient(high = 'purple3', low = 'orange') +
+  #scale_fill_gradient(high = 'purple3', low = 'orange') +
+  geom_violin(fill = "darkgray", alpha = 0.3, color = NA) +
+  geom_path(
+    aes(group = zone), 
+    size = 0.5, 
+    position = position_jitter(width = 0.1, height = 0, seed = 3922)
+  ) +
+#  geom_path(
+#    aes(group = zone, linewidth = count),   # Use 'count' for line thickness
+#    colour = "black"
+#  ) +
+  geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, height = 0, seed = 3922)) +  
   theme_minimal() +
   labs(title = "Annual broods surveyed by Site",
        x = "Year",
-       y = "N broods",
-       fill = "Mean Latitude",
-       colour = "Mean Latitude") +
+       y = "N broods") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
   )
 
 broods_surveyed_df <- all_combinations %>%
-  left_join(broods_surveyed_df, by = c("site", "year")) %>%
+  left_join(broods_surveyed_df, by = c("zone", "year")) %>%
   replace_na(list(brood_count = 0))
 
 for (i in site_codes) {
-  y_list[[i]] <- max_occupancy_df %>% filter(site == i) %>% arrange(year) %>% pull(max_occupancy)
-  J_list[[i]] <- n_offspring_df   %>% filter(site == i) %>% arrange(year) %>% pull(fledgling_count)
-  R_list[[i]] <- broods_surveyed_df %>% filter(site == i) %>% arrange(year) %>% pull(brood_count)
+  y_list[[i]] <- max_occupancy_df %>% filter(zone == i) %>% arrange(year) %>% pull(max_occupancy)
+  J_list[[i]] <- n_offspring_df   %>% filter(zone == i) %>% arrange(year) %>% pull(fledgling_count)
+  R_list[[i]] <- broods_surveyed_df %>% filter(zone == i) %>% arrange(year) %>% pull(brood_count)
 }
 
 (occupancy_p / broods_p / n_fledge_p)
-
 
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
 
@@ -283,15 +358,40 @@ print(dim(J_mat_bt))
 print(dim(R_mat_bt))
 print(dim(marray_list))
 
+view(marray_list)
+
 y_mat_bt    <- apply(y_mat_bt,    2, as.integer)
 J_mat_bt <- apply(J_mat_bt[,1:11], 2, as.integer)
 R_mat_bt <- apply(R_mat_bt[,1:11], 2, as.integer)
-marray_list <- apply(marray_list, c(1,2,3), as.integer)
+
+marray_list <- vector("list", length(site_codes))
+names(marray_list) <- site_codes
+
+for (i in seq_along(site_codes)) {
+  ma <- create_marray(site_codes[i], adults)
+  cat("Zone", site_codes[i], "- dim:", dim(ma), "\n")  # verify each one
+  marray_list[[i]] <- ma
+}
+
+# Then slot into 3D array explicitly
+marray_array <- array(NA_integer_, dim = c(nsites_bt, nyears_bt - 1, nyears_bt))
+for (i in 1:nsites_bt) {
+  marray_array[i,,] <- marray_list[[i]]
+}
+
+marray_list <- apply(marray_array, c(1,2,3), as.integer)
+
+for(s in 1:nsites_bt) {
+  row_sums <- apply(marray_list[s,,], 1, sum)
+  if(any(row_sums == 0)) cat("Zone", s, "has zero m-array rows:", which(row_sums == 0), "\n")
+}
 
 print(dim(y_mat_bt))
 print(dim(J_mat_bt))
 print(dim(R_mat_bt))
 print(dim(marray_list))
+nyears_bt
+nsites_bt
 
 stan_data_bt <- list(
   nyears    = nyears_bt,
@@ -303,17 +403,46 @@ stan_data_bt <- list(
 )
 
 params_bt <- c(
-  "phia", "f", "omega", "p",
-  "mphia", "mfec", "mim",
+  "phia", "omega", "p",
+  "mphia", "mim",
   "lambda", "mlam",
-  "sig_phia",      "sig_fec",      "sig_im",
-  "sig_site_phia", "sig_site_fec", "sig_site_im",
-  "sig_sy_phia",   "sig_sy_fec",   "sig_sy_im",
+  "sig_site_phia", "sig_site_im",
+  "sig_sy_phia",   "sig_sy_im",
   "N1", "NadSurv", "Nadimm", "Ntot",
   "var_phia_year", "var_phia_siteyear", "icc_phia",
-  "var_fec_year", "var_fec_siteyear", "icc_fec",
   "var_im_year", "var_im_siteyear", "icc_im"
 )
+
+ # Give Stan parameters to estimate
+ params_bt_s <- c(
+   # Demographic rates and recapture prob [site, year]
+   "phij", "phia", "f", "omega", "p",
+   
+   # Grand mean demographic rates and recapture prob (back-transformed)
+   "mphij", "mphia", "mprod", "mim", "mp",
+   
+   # Population growth rates
+   "lambda", "mlam",
+   
+   # Standard deviations: year level
+   "sig_year_phia", "sig_year_prod", "sig_year_im", "sig_year_p",
+   
+   # Standard deviations: site level
+   "sig_site_phia", "sig_site_prod", "sig_site_im", "sig_site_p",
+   
+   # Standard deviations: site×year level
+   "sig_sy_phia", "sig_sy_prod", "sig_sy_im", "sig_sy_p",
+   
+   # Latent  state variables
+   "N1", "NadSurv", "Nadimm", "Ntot",
+   
+   # Variance components and ICC
+   "var_phia_year", "var_phia_site", "var_phia_siteyear", "icc_phia",
+   "var_prod_year",  "var_prod_site", "var_prod_siteyear",  "icc_prod",
+   "var_im_year",   "var_im_site", "var_im_siteyear",   "icc_im",
+   "var_p_year", "var_p_site", "var_p_siteyear", "icc_p"
+ )
+
 
 # MCMC settings
 ni <- 20000   
@@ -322,23 +451,54 @@ nt <- 5
 nc <- 4
 
 inits_bt <- lapply(1:nc, function(i) {
-  list(l_mphia = rnorm(1, 0.2, 0.5),
-       l_mfec = rnorm(1, 0.2, 0.5),
-       l_mim = rnorm(1, 0.2, 0.5),
-       l_p = rnorm(1, 0.2, 1),
-       sig_phia = runif(1, 0.1, 10),
-       sig_fec = runif(1, 0.1, 10),
-       sig_im = runif(1, 0.1, 10),
-       sig_site_phia = runif(1, 0.1, 10),
-       sig_site_fec = runif(1, 0.1, 10),
-       sig_site_im = runif(1, 0.1, 10),
-       sig_sy_phia = runif(1, 0.1, 10),
-       sig_sy_fec = runif(1, 0.1, 10),
-       sig_sy_im = runif(1, 0.1, 10),
-       N1      = lapply(1:nsites, function(s) round(runif(nyears,  1, 50))),
-       NadSurv = lapply(1:nsites, function(s) round(runif(nyears,  5, 50))),
-       Nadimm  = lapply(1:nsites, function(s) round(runif(nyears,  1, 50)))
-  )})
+     list(
+       # Grand means (on logit scale; 
+       # to convert to probability scale to understand what the numbers mean, run plogis(-1.1), plogis(0) etc)
+       l_mphij = -1.1,   
+       l_mphia =  0,
+       l_mprod  =  0,
+       l_mim   = 0,
+       l_p     =  0,
+       
+       # sigmas (std dev)
+       sig_phia      = 1,
+       sig_prod       = 1,
+       sig_im        = 1,
+       sig_p         = 1,
+       sig_site_phia = 1,
+       sig_site_prod  = 1,
+       sig_site_im   = 1,
+       sig_site_p    = 1,
+       sig_sy_phia   = 1,
+       sig_sy_prod    = 1,
+       sig_sy_im     = 1,
+       sig_sy_p      = 1,
+       
+       # Raw random effects 
+       epsilon_phia_raw = rep(0, nyears_bt - 1),
+       epsilon_prod_raw  = rep(0, nyears_bt - 1),
+       epsilon_im_raw   = rep(0, nyears_bt - 1),
+       epsilon_p_raw = rep(0, nyears_bt - 1),
+       zeta_phia_raw    = rep(0, nsites_bt),
+       zeta_prod_raw     = rep(0, nsites_bt),
+       zeta_im_raw      = rep(0, nsites_bt),
+       zeta_p_raw    = rep(0, nsites_bt),
+       eta_phia_raw     = lapply(1:nsites_bt, function(s) rep(0, nyears_bt - 1)),
+       eta_prod_raw      = lapply(1:nsites_bt, function(s) rep(0, nyears_bt - 1)),
+       eta_im_raw       = lapply(1:nsites_bt, function(s) rep(0, nyears_bt - 1)),
+       eta_p_raw     = lapply(1:nsites_bt, function(s) rep(0, nyears_bt - 1)),
+       
+       # Inits for pop sizes in the components of Ntot
+       N1      = lapply(1:nsites_bt, function(s) rep(40, nyears_bt)),
+       NadSurv = lapply(1:nsites_bt, function(s) rep(40, nyears_bt)),
+       Nadimm  = lapply(1:nsites_bt, function(s) rep(40, nyears_bt))
+     )
+   })
+  
+#run N1 etc separately 
+N2 <- lapply(1:nsites_bt, function(s) round(runif(nyears,  0, 3)))
+N2
+#tweak to edit and get a more reasonable distribution 
 
 
 closeAllConnections()
@@ -348,41 +508,173 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 set.seed(123)
 
+
 ipm_bt_debug <- stan(
-  file   = "ipm_bt.stan",
-  data   = stan_data_bt_2,
-  init   = inits_bt[1],   
+  file   = "ipm_bluti_final.stan",
+  data   = stan_data_bt,
+  #init   = inits_bt[1],   
   chains = 1,
-  iter   = 10,             
-  seed   = 2
+  iter   = 10
 )
 
+?stan
+
 ipm_bt <- stan(
-  file    = "ipm_bt.stan",
+  file    = "ipm_bluti_final.stan",
   data    = stan_data_bt,
   init    = inits_bt,
-  pars    = params_bt,
+  pars    = params_bt_s,
   chains  = nc,
   iter    = ni,
   warmup  = nb,
   thin    = nt,
   seed    = 2,
   control = list(
-    adapt_delta   = 0.99,
-    max_treedepth = 15    
+    adapt_delta   = 0.9,
+    max_treedepth = 10    
   )
 )
 
+ipm_bt_test <- stan(
+  file    = "ipm_bluti_final.stan",
+  data    = stan_data_bt,
+  init    = inits_bt,
+  pars    = params_bt,
+  chains  = 2,
+  iter    = 500,
+  warmup  = 250,
+  thin    = 1,
+  seed    = 2,
+  control = list(adapt_delta = 0.9, max_treedepth = 10)
+)
+
 print(ipm_bt,
-      pars = c("mphia", "mfec", "mim",
-               "sig_phia",      "sig_fec",      "sig_im",
-               "sig_site_phia", "sig_site_fec", "sig_site_im",
-               "sig_sy_phia",   "sig_sy_fec",   "sig_sy_im",
+      pars = c("mphia", "mim", "mprod",
+               "sig_site_im", "sig_site_prod",
+               "sig_sy_phia",   "sig_sy_im", "sig_sy_prod",
                "mlam",
                "var_phia_year", "var_phia_siteyear", "icc_phia",
-               "var_fec_year", "var_fec_siteyear", "icc_fec",
-               "var_im_year", "var_im_siteyear", "icc_im"),
+               "var_im_year", "var_im_siteyear", "icc_im",
+               "var_prod_year", "var_prod_siteyear", "icc_prod"),
       digits = 3)
 
 # Get posterior distributions
 posterior_ipm <- as.data.frame(ipm_bt)
+
+posterior_ipm_test <- as.data.frame(ipm_bt_test)
+
+rds_file_path <- "ipm_bt.rds"
+
+saveRDS(ipm_bt, rds_file_path)
+
+ipm_bt <- readRDS("ipm_bt.rds")
+
+
+view(posterior_ipm)
+
+#lambda
+lambda_pds <- posterior_ipm %>%
+  select(contains("lambda")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+pds_lambda <- ggplot(lambda_pds, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Pooled Posterior Distribution of Lambda",
+       x = "Lambda Value",
+       y = "Density") +
+  theme_minimal()
+
+#phia icc
+
+phia_icc <- posterior_ipm %>%
+  select(contains("icc_phia")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+icc_phia_p <- ggplot(phia_icc, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Adult Survival ICC",
+       x = "phia ICC",
+       y = "Density") +
+  theme_minimal()
+
+icc_phia_p
+
+#var_phia_siteyear
+
+var_phia_siteyear <- posterior_ipm %>%
+  select(contains("var_phia_siteyear")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+var_phia_siteyear_p <- ggplot(var_phia_siteyear, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Adult Survival Random Effect Variances",
+       x = "phia var",
+       y = "Density") +
+  theme_minimal()
+
+var_phia_siteyear_p
+
+#im icc
+
+im_icc <- posterior_ipm %>%
+  select(contains("icc_im")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+icc_im_p <- ggplot(im_icc, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Immigration ICC",
+       x = "im ICC",
+       y = "Density") +
+  theme_minimal()
+
+icc_im_p
+
+#var_im_siteyear
+
+var_im_siteyear <- posterior_ipm %>%
+  select(contains("var_im_siteyear")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+var_im_siteyear_p <- ggplot(var_im_siteyear, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Immigration Random Effect Variances",
+       x = "im var",
+       y = "Density") +
+  theme_minimal()
+
+var_im_siteyear_p
+
+#prod
+prod_icc <- posterior_ipm %>%
+  select(contains("icc_prod")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+icc_prod_p <- ggplot(prod_icc, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Productivity ICC",
+       x = "prod ICC",
+       y = "Density") +
+  theme_minimal()
+
+icc_prod_p
+
+#var_prod_siteyear
+
+var_prod_siteyear <- posterior_ipm %>%
+  select(contains("var_prod_siteyear")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+var_prod_siteyear_p <- ggplot(var_prod_siteyear, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Productivity Random Effect Variances",
+       x = "prod var",
+       y = "Density") +
+  theme_minimal()
+
+var_prod_siteyear_p
+
+icc_var_plots <- (var_phia_siteyear_p | icc_phia_p) / (var_prod_siteyear_p | icc_prod_p) / (var_im_siteyear_p | icc_im_p)
+
+icc_var_plots
+
+ggsave("figs/icc_var_plots_bt.png", plot = icc_var_plots)

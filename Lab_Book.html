@@ -829,6 +829,35 @@ in the hoopoe model, whereas for the blue tit data they take (site,
 nyear). However, for the M-arrays, both Hoopoe and blue tit take (site,
 nyear-1, nyear). Therefore, some nyear-1s in the stan file need editing
 to nyear while others need leaving.</p>
+<p>Following Sanjana’s email, I now understand that my data should be
+formatted the same as the Hoopoe data. This is because the nestling
+counts and surveyed broods do not exist at t=1, but somewhere between
+t=t and t=t+1. Therefore, the 12th entry should not exist from the
+model’s perspective as the 12th year is still pre breeding - and from
+the model perspective, is until the 13th year. I have removed the 12th
+year below, as well as reformatting each input as.integer:</p>
+<pre><code>## [1] 44 12</code></pre>
+<pre><code>## [1] 44 11</code></pre>
+<pre><code>## [1] 44 11</code></pre>
+<pre><code>## [1] 44 11 12</code></pre>
+<p>Next, I have repurposed the hoopoe code for the blue tits to fit the
+model. However, the following is causing issues:</p>
+<p>” N1 = lapply(1:nsites, function(s) round(runif(nyears, 1, 50))),
+NadSurv = lapply(1:nsites, function(s) round(runif(nyears, 5, 50))),
+Nadimm = lapply(1:nsites, function(s) round(runif(nyears, 1, 50)))”</p>
+<p>I think this is because some sites have very low occupancy, which is
+where we draw our Ntot estimate. This then pulls the estimate down
+towards 0, making it very easy for the number of adults surviving to the
+next census to exceed the number of adults. This is, naturally,
+impossible. To fix this maybe we add a parameter similar to recapture
+probability? That can vary site to site? That tells us that occupancy is
+in some way proportional to Ntot but not representative.</p>
+<p>I’m also worrying a bit about sites and boxes that weren’t added
+until later years - I think they’re being included in the model as empty
+rather than absent for the years before their implementation. This would
+create an artificial spike in lambda/ntot from 2016-2017 for example.
+I’m not sure how this would resolve as the model seems pretty inflexible
+on NAs and the dimensions of input data.</p>
 </div>
 
 
