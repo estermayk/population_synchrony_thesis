@@ -262,6 +262,7 @@ for (i in site_codes) {
 
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
 
+
 list_to_mat <- function(lst, site_codes, nyears) {
   mat <- matrix(0, nrow = length(site_codes), ncol = nyears,
                 dimnames = list(site_codes, NULL))
@@ -285,15 +286,30 @@ print(dim(J_mat_bt))
 print(dim(R_mat_bt))
 print(dim(marray_list))
 
+site_codes <- sort(unique(adults$site))
+marray_list <- vector("list", length(site_codes))
+names(marray_list) <- site_codes
+
+for (i in seq_along(site_codes)) {
+  ma <- create_marray(site_codes[i], adults)
+  cat("site", site_codes[i], "- dim:", dim(ma), "\n")  # verify each one
+  marray_list[[i]] <- ma
+}
+
+marray_array <- array(NA_integer_, dim = c(nsites_bt, nyears_bt - 1, nyears_bt))
+for (i in 1:nsites_bt) {
+  marray_array[i,,] <- marray_list[[i]]
+}
+
+marray_list <- apply(marray_array, c(1,2,3), as.integer)
+
 y_mat_bt    <- apply(y_mat_bt,    2, as.integer)
 J_mat_bt <- apply(J_mat_bt[,1:11], 2, as.integer)
 R_mat_bt <- apply(R_mat_bt[,1:11], 2, as.integer)
-marray_list <- apply(marray_list, c(1,2,3), as.integer)
 
 print(dim(y_mat_bt))
 print(dim(J_mat_bt))
 print(dim(R_mat_bt))
-print(dim(marray_list))
 
 stan_data_bt <- list(
   nyears    = nyears_bt,
@@ -324,23 +340,50 @@ nt <- 5
 nc <- 4
 
 inits_bt <- lapply(1:nc, function(i) {
-  list(l_mphia = rnorm(1, 0.2, 0.5),
-       l_mfec = rnorm(1, 0.2, 0.5),
-       l_mim = rnorm(1, 0.2, 0.5),
-       l_p = rnorm(1, 0.2, 1),
-       sig_phia = runif(1, 0.1, 10),
-       sig_fec = runif(1, 0.1, 10),
-       sig_im = runif(1, 0.1, 10),
-       sig_site_phia = runif(1, 0.1, 10),
-       sig_site_fec = runif(1, 0.1, 10),
-       sig_site_im = runif(1, 0.1, 10),
-       sig_sy_phia = runif(1, 0.1, 10),
-       sig_sy_fec = runif(1, 0.1, 10),
-       sig_sy_im = runif(1, 0.1, 10),
-       N1      = lapply(1:nsites, function(s) round(runif(nyears,  2, 6))),
-       NadSurv = lapply(1:nsites, function(s) round(runif(nyears,  1, 6))),
-       Nadimm  = lapply(1:nsites, function(s) round(runif(nyears,  2, 6)))
-  )})
+  list(
+    # Grand means (on logit scale; 
+    # to convert to probability scale to understand what the numbers mean, run plogis(-1.1), plogis(0) etc)
+    l_mphij = -1.1,   
+    l_mphia =  0,
+    l_mprod  =  0,
+    l_mim   = 0,
+    l_p     =  0,
+    
+    # sigmas (std dev)
+    sig_phia      = 1,
+    sig_prod       = 1,
+    sig_im        = 1,
+    sig_p         = 1,
+    sig_site_phia = 1,
+    sig_site_prod  = 1,
+    sig_site_im   = 1,
+    sig_site_p    = 1,
+    sig_sy_phia   = 1,
+    sig_sy_prod    = 1,
+    sig_sy_im     = 1,
+    sig_sy_p      = 1,
+    
+    # Raw random effects 
+    epsilon_phia_raw = rep(0, nyears_bt - 1),
+    epsilon_prod_raw  = rep(0, nyears_bt - 1),
+    epsilon_im_raw   = rep(0, nyears_bt - 1),
+    epsilon_p_raw = rep(0, nyears_bt - 1),
+    zeta_phia_raw    = rep(0, nsites_bt),
+    zeta_prod_raw     = rep(0, nsites_bt),
+    zeta_im_raw      = rep(0, nsites_bt),
+    zeta_p_raw    = rep(0, nsites_bt),
+    eta_phia_raw     = lapply(1:nsites_bt, function(s) rep(0, nyears_bt - 1)),
+    eta_prod_raw      = lapply(1:nsites_bt, function(s) rep(0, nyears_bt - 1)),
+    eta_im_raw       = lapply(1:nsites_bt, function(s) rep(0, nyears_bt - 1)),
+    eta_p_raw     = lapply(1:nsites_bt, function(s) rep(0, nyears_bt - 1)),
+    
+    # Inits for pop sizes in the components of Ntot
+    N1      = lapply(1:nsites_bt, function(s) rep(40, nyears_bt)),
+    NadSurv = lapply(1:nsites_bt, function(s) rep(40, nyears_bt)),
+    Nadimm  = lapply(1:nsites_bt, function(s) rep(40, nyears_bt))
+  )
+})
+
 
 #run N1 etc separately 
 N2 <- lapply(1:nsites, function(s) round(runif(nyears,  1, 6)))
@@ -356,16 +399,16 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 
 ipm_bt_debug <- stan(
-  file   = "ipm_bt.stan",
-  data   = stan_data_bt_2,
-  init   = inits_bt[1],   
+  file   = "ipm_bluti_final.stan",
+  data   = stan_data_bt,
+  #init   = inits_bt[1],   
   chains = 1,
   iter   = 10,             
   seed   = 2
 )
 
 ipm_bt <- stan(
-  file    = "ipm_bt.stan",
+  file    = "ipm_bt_final.stan",
   data    = stan_data_bt,
   init    = inits_bt,
   pars    = params_bt,
@@ -381,13 +424,13 @@ ipm_bt <- stan(
 )
 
 print(ipm_bt,
-      pars = c("mphia", "mfec", "mim",
-               "sig_phia",      "sig_fec",      "sig_im",
-               "sig_site_phia", "sig_site_fec", "sig_site_im",
-               "sig_sy_phia",   "sig_sy_fec",   "sig_sy_im",
+      pars = c("mphia", "mprod", "mim",
+               "sig_phia",      "sig_prod",      "sig_im",
+               "sig_site_phia", "sig_site_prod", "sig_site_im",
+               "sig_sy_phia",   "sig_sy_prod",   "sig_sy_im",
                "mlam",
                "var_phia_year", "var_phia_siteyear", "icc_phia",
-               "var_fec_year", "var_fec_siteyear", "icc_fec",
+               "var_prod_year", "var_prod_siteyear", "icc_prod",
                "var_im_year", "var_im_siteyear", "icc_im"),
       digits = 3)
 
