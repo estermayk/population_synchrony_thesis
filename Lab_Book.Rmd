@@ -1061,4 +1061,5 @@ Meeting 25/06
 - continue to plot data input
 - write methods - how the model uses the data 
 - start to pull out estimates - iccs, lambdas for site years, plot with demographic rates 
-- plot iccs and random effect variances (site-year) like hoopoes 
+- plot iccs and random effect variances (site-year) like hoopoes
+- look into phij

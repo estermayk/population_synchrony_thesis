@@ -373,7 +373,6 @@ for (i in seq_along(site_codes)) {
   marray_list[[i]] <- ma
 }
 
-# Then slot into 3D array explicitly
 marray_array <- array(NA_integer_, dim = c(nsites_bt, nyears_bt - 1, nyears_bt))
 for (i in 1:nsites_bt) {
   marray_array[i,,] <- marray_list[[i]]
