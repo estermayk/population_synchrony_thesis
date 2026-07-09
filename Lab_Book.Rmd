@@ -1063,3 +1063,19 @@ Meeting 25/06
 - start to pull out estimates - iccs, lambdas for site years, plot with demographic rates 
 - plot iccs and random effect variances (site-year) like hoopoes
 - look into phij
+
+simultaneous equation for ipm explanation
+
+plot lambda (Y axis) (sitexyear) against demographic rates
+
+(1,2) is year 1 site 2 in posterior df
+
+scatter plot 
+
+correlation = demographic rate driving 
+
+plot the year variance with the ICCs 
+
+model similar to initial sucmod for Ntot - ICC calc from this 
+
+write up - finish methods, start results 

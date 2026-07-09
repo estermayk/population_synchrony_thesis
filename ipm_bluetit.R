@@ -3,6 +3,8 @@ library(tidyverse)
 library(ggplot2)
 library(patchwork)
 library(viridis)
+library(ClustGeo)
+library(sf)
 
 # Exercise3: Transform blue tit data into similar format used here for hoopoe dataset, namely:
 
@@ -564,116 +566,9 @@ posterior_ipm_test <- as.data.frame(ipm_bt_test)
 
 rds_file_path <- "ipm_bt.rds"
 
-saveRDS(ipm_bt, rds_file_path)
+saveRDS(ipm_bt, "~/population_synchrony_thesis/ipm_bt_v2.rds")
 
 ipm_bt <- readRDS("ipm_bt.rds")
 
-
 view(posterior_ipm)
 
-#lambda
-lambda_pds <- posterior_ipm %>%
-  select(contains("lambda")) %>%
-  pivot_longer(cols = everything(), values_to = "Value")
-
-pds_lambda <- ggplot(lambda_pds, aes(x = Value)) +
-  geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Pooled Posterior Distribution of Lambda",
-       x = "Lambda Value",
-       y = "Density") +
-  theme_minimal()
-
-#phia icc
-
-phia_icc <- posterior_ipm %>%
-  select(contains("icc_phia")) %>%
-  pivot_longer(cols = everything(), values_to = "Value")
-
-icc_phia_p <- ggplot(phia_icc, aes(x = Value)) +
-  geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Adult Survival ICC",
-       x = "phia ICC",
-       y = "Density") +
-  theme_minimal()
-
-icc_phia_p
-
-#var_phia_siteyear
-
-var_phia_siteyear <- posterior_ipm %>%
-  select(contains("var_phia_siteyear")) %>%
-  pivot_longer(cols = everything(), values_to = "Value")
-
-var_phia_siteyear_p <- ggplot(var_phia_siteyear, aes(x = Value)) +
-  geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Adult Survival Random Effect Variances",
-       x = "phia var",
-       y = "Density") +
-  theme_minimal()
-
-var_phia_siteyear_p
-
-#im icc
-
-im_icc <- posterior_ipm %>%
-  select(contains("icc_im")) %>%
-  pivot_longer(cols = everything(), values_to = "Value")
-
-icc_im_p <- ggplot(im_icc, aes(x = Value)) +
-  geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Immigration ICC",
-       x = "im ICC",
-       y = "Density") +
-  theme_minimal()
-
-icc_im_p
-
-#var_im_siteyear
-
-var_im_siteyear <- posterior_ipm %>%
-  select(contains("var_im_siteyear")) %>%
-  pivot_longer(cols = everything(), values_to = "Value")
-
-var_im_siteyear_p <- ggplot(var_im_siteyear, aes(x = Value)) +
-  geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Immigration Random Effect Variances",
-       x = "im var",
-       y = "Density") +
-  theme_minimal()
-
-var_im_siteyear_p
-
-#prod
-prod_icc <- posterior_ipm %>%
-  select(contains("icc_prod")) %>%
-  pivot_longer(cols = everything(), values_to = "Value")
-
-icc_prod_p <- ggplot(prod_icc, aes(x = Value)) +
-  geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Productivity ICC",
-       x = "prod ICC",
-       y = "Density") +
-  theme_minimal()
-
-icc_prod_p
-
-#var_prod_siteyear
-
-var_prod_siteyear <- posterior_ipm %>%
-  select(contains("var_prod_siteyear")) %>%
-  pivot_longer(cols = everything(), values_to = "Value")
-
-var_prod_siteyear_p <- ggplot(var_prod_siteyear, aes(x = Value)) +
-  geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Productivity Random Effect Variances",
-       x = "prod var",
-       y = "Density") +
-  theme_minimal()
-
-var_prod_siteyear_p
-
-icc_var_plots <- (var_phia_siteyear_p | icc_phia_p) / (var_prod_siteyear_p | icc_prod_p) / (var_im_siteyear_p | icc_im_p)
-
-icc_var_plots
-
-ggsave("figs/icc_var_plots_bt.png", plot = icc_var_plots)
