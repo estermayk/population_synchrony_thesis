@@ -572,3 +572,60 @@ ipm_bt <- readRDS("ipm_bt.rds")
 
 view(posterior_ipm)
 
+ntot_df$site_year <- as.factor(paste(ntot_df$site, ntot_df$year, sep = "_")) 
+ntotmod <- lmer(mean ~ (1|year) + (1|site) + (1|site_year), data = ntot_df) 
+summary(ntotmod)
+
+extract_all_draws <- function(posterior, pattern, site_labels, years_vec) {
+  cols <- grep(pattern, names(posterior), value = TRUE)
+  
+  posterior[, cols, drop = FALSE] %>%
+    as.data.frame() %>%
+    mutate(draw = row_number()) %>%
+    pivot_longer(-draw, names_to = "param", values_to = "value") %>%
+    tidyr::extract(param,
+                   into = c("site_idx", "year_idx"),
+                   regex = "\\[(\\d+),(\\d+)\\]",
+                   convert = TRUE) %>%
+    mutate(site     = site_labels[site_idx],
+           year     = years_vec[year_idx],
+           site_year = paste(site, year, sep = "_"))
+}
+
+ntot_draws <- extract_all_draws(posterior_ipm, "Ntot\\[", site_labels, years_bt)
+
+ntotmod <- lmer(value ~ (1|year) + (1|site) + (1|site_year), data = ntot_draws) 
+summary(ntotmod)
+
+
+get_variance_intercept(ntotmod)
+
+#extracting the variance components 
+var_components <- VarCorr(ntotmod)
+var_intercept_site_year <- attr(var_components$site_year, "stddev")^2
+var_intercept_site <- attr(var_components$site, "stddev")^2
+var_intercept_year <- attr(var_components$year, "stddev")^2
+
+#a crude look at ICC synchrony from the model 
+ntotsync <- var_intercept_year/(var_intercept_year + var_intercept_site_year)
+ntotsync
+
+lambda_draws <- extract_all_draws(posterior_ipm, "lambda\\[", site_labels, years_bt)
+
+lambdamod <- lmer(value ~ (1|year) + (1|site) + (1|site_year), data = lambda_draws) 
+summary(lambdamod)
+
+help('isSingular')
+
+get_variance_intercept(lambdamod)
+
+#extracting the variance components 
+var_components <- VarCorr(lambdamod)
+var_intercept_site_year <- attr(var_components$site_year, "stddev")^2
+var_intercept_site <- attr(var_components$site, "stddev")^2
+var_intercept_year <- attr(var_components$year, "stddev")^2
+
+#a crude look at ICC synchrony from the model 
+lambdasync <- var_intercept_year/(var_intercept_year + var_intercept_site_year)
+lambdasync
+ 

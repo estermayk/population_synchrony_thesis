@@ -8,6 +8,16 @@ site_labels <- paste0("Zone ", unique(adults$zone))
 
 site_labels
 
+extract_summary <- function(posterior, pattern) {
+  cols <- grep(pattern, names(posterior), value = TRUE)
+  data.frame(
+    param = cols,
+    mean  = colMeans(posterior[, cols, drop = FALSE]),
+    lower = apply(posterior[, cols, drop = FALSE], 2, quantile, 0.025),
+    upper = apply(posterior[, cols, drop = FALSE], 2, quantile, 0.975)
+  )
+}
+
 # Estimated Ntot per site per year
 ntot_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("Ntot\\[", s, ",")
@@ -44,6 +54,33 @@ p_ntot <- ggplot(ntot_df, aes(x = year)) +
   scale_x_continuous(n.breaks=8)
 
 p_ntot
+
+ggplot(ntot_df, aes(x = year, group = site, colour = site, fill = site)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.12, colour = NA) +
+  geom_line(aes(y = mean,     linetype = "Estimated Ntot"), linewidth = 0.9) +
+  geom_point(aes(y = mean,    shape    = "Estimated Ntot"), size = 1.5) +
+ # geom_line(aes(y = observed, linetype = "Observed count"), linewidth = 0.9) +
+#  geom_point(aes(y = observed, shape   = "Observed count"), size = 1.5) +
+#  scale_linetype_manual(values = c("Estimated Ntot" = "solid",
+ #                                  "Observed count"  = "dashed")) +
+#  scale_shape_manual(values   = c("Estimated Ntot" = 16,
+ #                                 "Observed count"  = 1)) +
+  scale_colour_viridis_d(option = "turbo") +
+  scale_fill_viridis_d(option   = "turbo") +
+  labs(title    = "Population size", 
+       x        = "Year", 
+       y        = "N",
+       linetype = NULL, 
+       shape    = NULL,
+       colour   = "Zone", 
+       fill     = "Zone") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks = 8) +
+  guides(colour   = guide_legend(nrow = 2),
+         fill     = guide_legend(nrow = 2),
+        # linetype = guide_legend(nrow = 2),
+         shape    = guide_legend(nrow = 2))
 
 # Exercises for Ester -
 
@@ -333,3 +370,107 @@ icc_var_plots
 
 ggsave("figs/icc_var_plots_bt.png", plot = icc_var_plots)
 
+lambda_site <- lambda_df %>%
+  group_by(site) %>%
+  summarise(mean_lambda = mean(mean),
+            lower_lambda = mean(lower),
+            upper_lambda = mean(upper))
+
+phia_site <- phia_est %>%
+  group_by(site) %>%
+  summarise(mean_phia = mean(mean),
+            lower_phia = mean(lower),
+            upper_phia = mean(upper))
+
+phia_lambda <- left_join(lambda_site, phia_site, by = "site")
+
+ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda, label = site)) +
+  #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+                #colour = "grey70", width = 0) +
+  #geom_errorbarh(aes(xmin = lower_phia, xmax = upper_phia), 
+                 #colour = "grey70", height = 0) +
+  geom_point(size = 3, colour = "steelblue") +
+  geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(x = "Mean adult survival (φa)",
+       y = "Mean λ",
+       title = "Population growth rate vs adult survival by zone") +
+  theme_bw(base_size = 12)
+
+
+prod_site <- f_est %>%
+  group_by(site) %>%
+  summarise(mean_prod = mean(mean),
+            lower_prod = mean(lower),
+            upper_prod = mean(upper))
+
+prod_lambda <- left_join(lambda_site, prod_site, by = "site")
+
+ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda, label = site)) +
+  #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  #colour = "grey70", width = 0) +
+  #geom_errorbarh(aes(xmin = lower_prod, xmax = upper_prod), 
+  #colour = "grey70", height = 0) +
+  geom_point(size = 3, colour = "steelblue") +
+  geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(x = "Mean productivity",
+       y = "Mean λ",
+       title = "Population growth rate vs productivity by zone") +
+  theme_bw(base_size = 12)
+
+
+ntot_site <- ntot_df %>%
+  group_by(site) %>%
+  summarise(mean_ntot = mean(mean),
+            lower_ntot = mean(lower),
+            upper_ntot = mean(upper))
+
+ntot_lambda <- left_join(lambda_site, ntot_site, by = "site")
+
+ggplot(ntot_lambda, aes(x = mean_ntot, y = mean_lambda, label = site)) +
+  #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  #colour = "grey70", width = 0) +
+  #geom_errorbarh(aes(xmin = lower_ntot, xmax = upper_ntot), 
+  #colour = "grey70", height = 0) +
+  geom_point(size = 3, colour = "steelblue") +
+  geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(x = "Mean ntot",
+       y = "Mean λ",
+       title = "Population growth rate vs population size by zone") +
+  theme_bw(base_size = 12)
+
+im_site <- Nadimm_df %>%
+  group_by(site) %>%
+  summarise(mean_im = mean(mean),
+            lower_im = mean(lower),
+            upper_im = mean(upper))
+
+im_lambda <- left_join(lambda_site, im_site, by = "site")
+
+ggplot(im_lambda, aes(x = mean_im, y = mean_lambda, label = site)) +
+  #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  #colour = "grey70", width = 0) +
+  #geom_errorbarh(aes(xmin = lower_im, xmax = upper_im), 
+  #colour = "grey70", height = 0) +
+  geom_point(size = 3, colour = "steelblue") +
+  geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(x = "Mean immigrants",
+       y = "Mean λ",
+       title = "Population growth rate vs immigration by zone") +
+  theme_bw(base_size = 12)
+
+
+cor.test(phia_lambda$mean_lambda, phia_lambda$mean_phia)
+
+cor.test(prod_lambda$mean_lambda, prod_lambda$mean_prod)
+
+cor.test(ntot_lambda$mean_lambda, ntot_lambda$mean_ntot)
+
+cor.test(im_lambda$mean_lambda, im_lambda$mean_im)
