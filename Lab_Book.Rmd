@@ -299,9 +299,9 @@ inits <- lapply(1:nc, function(i) {
 #  )
 #)
 
-#rds_file_path <- "ipm_hoopoe.rds"
+rds_file_path <- "ipm_hoopoe.rds"
 
-#saveRDS(ipm_hoopoe, rds_file_path)
+saveRDS(ipm_hoopoe, rds_file_path)
 
 ipm_hoopoe <- readRDS("ipm_hoopoe.rds")
 

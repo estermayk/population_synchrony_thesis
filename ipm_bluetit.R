@@ -64,54 +64,15 @@ ALN_adults_marray <- marray(ALN_adults_CH_matrix)
 
 ALN_adults_marray
 
-
-adults <- adults %>%
-  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
-                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
-                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
-                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
-                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
-                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
-                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
-                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
-                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
-                          site == "ART" | site == "MUN"  ~ "J",
-                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
-                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
-
-
-sitedat <- sitedat %>%
-  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
-                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
-                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
-                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
-                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
-                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
-                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
-                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
-                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
-                          site == "ART" | site == "MUN"  ~ "J",
-                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
-                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
-
-
-phendat <- phendat %>%
-  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
-                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
-                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
-                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
-                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
-                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
-                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
-                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
-                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
-                          site == "ART" | site == "MUN"  ~ "J",
-                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
-                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
-
+site_codes <- unique(sitedat$zone)
 
 site_codes
 
+nsites_bt <- length(site_codes)
+
+nsites_bt
+
+nyears_bt <- 12
 
 #making a function to iterate over the sites
 create_marray <- function(site_code, data) {
@@ -140,15 +101,10 @@ create_marray <- function(site_code, data) {
 }
 
 
-site_codes <- unique(adults$zone)
-
 marray_list <- lapply(site_codes, function(zone) create_marray(zone, adults))
 
 names(marray_list) <- site_codes
 dim(marray_list)
-
-nsites_bt <- 12
-nyears_bt <- 12
 
 marray_list <- array(unlist(marray_list), dim = c(nsites_bt, nyears_bt - 1, nyears_bt))
 
@@ -215,17 +171,19 @@ occupancy_p <- ggplot(max_occupancy_df, aes(x = factor(year), y = max_occupancy,
   geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
   geom_path(
     aes(group = zone), 
-    size = 0.4, alpha = 0.5, 
+    size = 0.7, alpha = 1, 
     position = position_jitter(width = 0.1, seed = 3922)
   ) + 
+  scale_colour_viridis_d(option = "turbo") +
+  scale_fill_viridis_d(option   = "turbo") +
   #geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, seed = 3922)) +  
   theme_minimal() +
   scale_y_continuous(n.breaks = 9) +
-  labs(title = "Annual Occupancy by Site",
+  labs(title = "Annual Occupancy by Zone",
        x = "Year",
        y = "Occupancy",
-       fill = "Mean Latitude",
-       colour = 'Mean Latitude') +
+       fill = "Zone",
+       colour = 'Zone') +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid.major.x = element_line(color = "gray", size = 0.5)

@@ -8,6 +8,9 @@ site_labels <- paste0("Zone ", unique(adults$zone))
 
 site_labels
 
+survey_years <- c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025)
+survey_years_m1 <- c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024)
+
 extract_summary <- function(posterior, pattern) {
   cols <- grep(pattern, names(posterior), value = TRUE)
   data.frame(
@@ -22,14 +25,14 @@ extract_summary <- function(posterior, pattern) {
 ntot_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("Ntot\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
-  df$year <- years_bt
+  df$year <- survey_years
   df$site <- site_labels[s]
   df
 })
 ntot_df <- bind_rows(ntot_list)
 
 # Observed counts per site per year
-obs_counts <- expand.grid(site = site_labels, year = years_bt) %>%
+obs_counts <- expand.grid(site = site_labels, year = survey_years) %>%
   arrange(site, year) %>%
   mutate(observed = as.vector(t(stan_data_bt$y)))  # y is [nsites, nyears]
 
@@ -100,14 +103,14 @@ typeof(marray_list)
 f_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("f\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
-  df$year <- years_m1_bt
+  df$year <- survey_years_m1
   df$site <- site_labels[s]
   df
 })
 f_est <- bind_rows(f_list)
 
 # Observed f per site per year
-obs_f <- expand.grid(site = site_labels, year = years_m1_bt) %>%
+obs_f <- expand.grid(site = site_labels, year = survey_years_m1) %>%
   arrange(site, year) %>%
   mutate(observed = as.vector(t(stan_data_bt$J / stan_data_bt$R)))
 
@@ -140,7 +143,7 @@ p_f
 phij_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("phij\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
-  df$year <- years_m1_bt
+  df$year <- survey_years_m1
   df$site <- site_labels[s]
   df
 })
@@ -150,7 +153,7 @@ phij_est <- bind_rows(phij_list)
 phia_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("phia\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
-  df$year <- years_m1_bt
+  df$year <- survey_years_m1
   df$site <- site_labels[s]
   df
 })
@@ -188,7 +191,7 @@ p_phi
 lambda_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("lambda\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
-  df$year <- years_m1_bt
+  df$year <- survey_years_m1
   df$site <- site_labels[s]
   df
 })
@@ -224,14 +227,14 @@ p_lambda
 Nadimm_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("Nadimm\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
-  df$year <- years_bt
+  df$year <- survey_years
   df$site <- site_labels[s]
   df
 })
 Nadimm_df <- bind_rows(Nadimm_list)
 
 # Observed counts per site per year
-obs_counts <- expand.grid(site = site_labels, year = years_bt) %>%
+obs_counts <- expand.grid(site = site_labels, year = survey_years) %>%
   arrange(site, year) %>%
   mutate(observed = as.vector(t(stan_data_bt$y)))  # y is [nsites, nyears]
 
@@ -290,20 +293,20 @@ icc_phia_p <- ggplot(phia_icc, aes(x = Value)) +
 
 icc_phia_p
 
-#var_phia_siteyear
+#var_phia_year
 
-var_phia_siteyear <- posterior_ipm %>%
-  select(contains("var_phia_siteyear")) %>%
+var_phia_year <- posterior_ipm %>%
+  select(contains("var_phia_year")) %>%
   pivot_longer(cols = everything(), values_to = "Value")
 
-var_phia_siteyear_p <- ggplot(var_phia_siteyear, aes(x = Value)) +
+var_phia_year_p <- ggplot(var_phia_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
   labs(title = "Adult Survival Random Effect Variances",
        x = "phia var",
        y = "Density") +
   theme_minimal()
 
-var_phia_siteyear_p
+var_phia_year_p
 
 #im icc
 
@@ -320,20 +323,20 @@ icc_im_p <- ggplot(im_icc, aes(x = Value)) +
 
 icc_im_p
 
-#var_im_siteyear
+#var_im_year
 
-var_im_siteyear <- posterior_ipm %>%
-  select(contains("var_im_siteyear")) %>%
+var_im_year <- posterior_ipm %>%
+  select(contains("var_im_year")) %>%
   pivot_longer(cols = everything(), values_to = "Value")
 
-var_im_siteyear_p <- ggplot(var_im_siteyear, aes(x = Value)) +
+var_im_year_p <- ggplot(var_im_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
   labs(title = "Immigration Random Effect Variances",
        x = "im var",
        y = "Density") +
   theme_minimal()
 
-var_im_siteyear_p
+var_im_year_p
 
 #prod
 prod_icc <- posterior_ipm %>%
@@ -349,123 +352,142 @@ icc_prod_p <- ggplot(prod_icc, aes(x = Value)) +
 
 icc_prod_p
 
-#var_prod_siteyear
+#var_prod_year
 
-var_prod_siteyear <- posterior_ipm %>%
-  select(contains("var_prod_siteyear")) %>%
+var_prod_year <- posterior_ipm %>%
+  select(contains("var_prod_year")) %>%
   pivot_longer(cols = everything(), values_to = "Value")
 
-var_prod_siteyear_p <- ggplot(var_prod_siteyear, aes(x = Value)) +
+var_prod_year_p <- ggplot(var_prod_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
   labs(title = "Productivity Random Effect Variances",
        x = "prod var",
        y = "Density") +
   theme_minimal()
 
-var_prod_siteyear_p
+var_prod_year_p
 
-icc_var_plots <- (var_phia_siteyear_p | icc_phia_p) / (var_prod_siteyear_p | icc_prod_p) / (var_im_siteyear_p | icc_im_p)
+icc_var_plots <- (var_phia_year_p | icc_phia_p) / (var_prod_year_p | icc_prod_p) / (var_im_year_p | icc_im_p)
 
 icc_var_plots
 
 ggsave("figs/icc_var_plots_bt.png", plot = icc_var_plots)
 
-lambda_site <- lambda_df %>%
-  group_by(site) %>%
-  summarise(mean_lambda = mean(mean),
-            lower_lambda = mean(lower),
-            upper_lambda = mean(upper))
+lambda_df$site_year <- as.factor(paste(lambda_df$year, lambda_df$site, sep = "_")) 
 
-phia_site <- phia_est %>%
-  group_by(site) %>%
-  summarise(mean_phia = mean(mean),
-            lower_phia = mean(lower),
-            upper_phia = mean(upper))
+lambda_siteyear <- lambda_df %>%
+  group_by(site_year) %>%
+  summarise(mean_lambda = mean,
+            lower_lambda = lower,
+            upper_lambda = upper)
 
-phia_lambda <- left_join(lambda_site, phia_site, by = "site")
+ntot_df$site_year <- as.factor(paste(ntot_df$year, ntot_df$site, sep = "_")) 
 
-ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda, label = site)) +
+phia_siteyear <- ntot_df %>%
+  group_by(site_year) %>%
+  summarise(mean_phia = mean,
+            lower_phia = lower,
+            upper_phia = upper)
+
+phia_lambda <- left_join(lambda_siteyear, phia_siteyear, by = "site_year")
+
+phia_lambda <- subset(phia_lambda, site_year != '2014_Zone H')
+
+phia_lambda_p <- ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda)) +
   #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
                 #colour = "grey70", width = 0) +
   #geom_errorbarh(aes(xmin = lower_phia, xmax = upper_phia), 
                  #colour = "grey70", height = 0) +
-  geom_point(size = 3, colour = "steelblue") +
-  geom_text(nudge_y = 0.02, size = 3) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
   labs(x = "Mean adult survival (φa)",
        y = "Mean λ",
-       title = "Population growth rate vs adult survival by zone") +
+       title = "Population growth rate vs adult survival by zone_year") +
   theme_bw(base_size = 12)
 
 
-prod_site <- f_est %>%
-  group_by(site) %>%
-  summarise(mean_prod = mean(mean),
-            lower_prod = mean(lower),
-            upper_prod = mean(upper))
+f_est$site_year <- as.factor(paste(f_est$year, f_est$site, sep = "_")) 
 
-prod_lambda <- left_join(lambda_site, prod_site, by = "site")
+prod_siteyear <- f_est %>%
+  group_by(site_year) %>%
+  summarise(mean_prod = mean,
+            lower_prod = lower,
+            upper_prod = upper)
 
-ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda, label = site)) +
+prod_lambda <- left_join(lambda_siteyear, prod_siteyear, by = "site_year")
+
+prod_lambda <- subset(prod_lambda, site_year != '2014_Zone H')
+
+prod_lambda_p <- ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda)) +
   #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
   #colour = "grey70", width = 0) +
   #geom_errorbarh(aes(xmin = lower_prod, xmax = upper_prod), 
   #colour = "grey70", height = 0) +
-  geom_point(size = 3, colour = "steelblue") +
-  geom_text(nudge_y = 0.02, size = 3) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
   labs(x = "Mean productivity",
        y = "Mean λ",
-       title = "Population growth rate vs productivity by zone") +
+       title = "Population growth rate vs productivity by zone_year") +
   theme_bw(base_size = 12)
 
 
-ntot_site <- ntot_df %>%
-  group_by(site) %>%
-  summarise(mean_ntot = mean(mean),
-            lower_ntot = mean(lower),
-            upper_ntot = mean(upper))
+ntot_df$site_year <- as.factor(paste(ntot_df$year, ntot_df$site, sep = "_")) 
 
-ntot_lambda <- left_join(lambda_site, ntot_site, by = "site")
+ntot_siteyear <- ntot_df %>%
+  group_by(site_year) %>%
+  summarise(mean_ntot = mean,
+            lower_ntot = lower,
+            upper_ntot = upper)
 
-ggplot(ntot_lambda, aes(x = mean_ntot, y = mean_lambda, label = site)) +
+ntot_lambda <- left_join(lambda_siteyear, ntot_siteyear, by = "site_year")
+
+ntot_lambda <- subset(ntot_lambda, site_year != '2014_Zone H')
+
+ntot_lambda_p <- ggplot(ntot_lambda, aes(x = mean_ntot, y = mean_lambda)) +
   #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
   #colour = "grey70", width = 0) +
   #geom_errorbarh(aes(xmin = lower_ntot, xmax = upper_ntot), 
   #colour = "grey70", height = 0) +
-  geom_point(size = 3, colour = "steelblue") +
-  geom_text(nudge_y = 0.02, size = 3) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
   labs(x = "Mean ntot",
        y = "Mean λ",
-       title = "Population growth rate vs population size by zone") +
+       title = "Population growth rate vs population size by zone_year") +
   theme_bw(base_size = 12)
 
-im_site <- Nadimm_df %>%
-  group_by(site) %>%
-  summarise(mean_im = mean(mean),
-            lower_im = mean(lower),
-            upper_im = mean(upper))
+Nadimm_df$site_year <- as.factor(paste(Nadimm_df$year, Nadimm_df$site, sep = "_")) 
 
-im_lambda <- left_join(lambda_site, im_site, by = "site")
+im_siteyear <- Nadimm_df %>%
+  group_by(site_year) %>%
+  summarise(mean_im = mean,
+            lower_im = lower,
+            upper_im = upper)
 
-ggplot(im_lambda, aes(x = mean_im, y = mean_lambda, label = site)) +
+im_lambda <- left_join(lambda_siteyear, im_siteyear, by = "site_year")
+
+im_lambda <- subset(im_lambda, site_year != '2014_Zone H')
+
+im_lambda_p <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
   #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
   #colour = "grey70", width = 0) +
   #geom_errorbarh(aes(xmin = lower_im, xmax = upper_im), 
   #colour = "grey70", height = 0) +
-  geom_point(size = 3, colour = "steelblue") +
-  geom_text(nudge_y = 0.02, size = 3) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
   labs(x = "Mean immigrants",
        y = "Mean λ",
-       title = "Population growth rate vs immigration by zone") +
+       title = "Population growth rate vs immigration by zone_year") +
   theme_bw(base_size = 12)
 
+(phia_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
 
 cor.test(phia_lambda$mean_lambda, phia_lambda$mean_phia)
 
