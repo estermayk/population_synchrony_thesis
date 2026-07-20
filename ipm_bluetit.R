@@ -216,17 +216,19 @@ n_fledge_p <- ggplot(n_offspring_df, aes(x = factor(year), y = fledgling_count, 
   geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
   geom_path(
     aes(group = zone), 
-    size = 0.4, alpha = 0.5, 
+    size = 0.7, alpha = 1, 
     position = position_jitter(width = 0.1, seed = 3922)
-  ) + 
-  geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, seed = 3922)) +  
+  ) +  
+  scale_colour_viridis_d(option = "turbo") +
+  scale_fill_viridis_d(option   = "turbo") +
+  #geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, seed = 3922)) +  
   #geom_line(aes(group = site, colour = Mean.Lat)) +
   theme_minimal() +
-  labs(title = "Annual fledgling count by Site",
+  labs(title = "Annual fledgling count by Zone",
        x = "Year",
        y = "N fledglings",
-       fill = "Mean Latitude",
-       colour = "Mean Latitude") +
+       fill = "Zone",
+       colour = "Zone") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
@@ -265,18 +267,22 @@ broods_p <- ggplot(broods_surveyed_df, aes(x = factor(year), y = brood_count, co
   geom_violin(fill = "darkgray", alpha = 0.3, color = NA) +
   geom_path(
     aes(group = zone), 
-    size = 0.5, 
+    size = 0.7, 
     position = position_jitter(width = 0.1, height = 0, seed = 3922)
-  ) +
+  ) + 
+  scale_colour_viridis_d(option = "turbo") +
+  scale_fill_viridis_d(option   = "turbo") +
 #  geom_path(
 #    aes(group = zone, linewidth = count),   # Use 'count' for line thickness
 #    colour = "black"
 #  ) +
-  geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, height = 0, seed = 3922)) +  
+  #geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, height = 0, seed = 3922)) +  
   theme_minimal() +
-  labs(title = "Annual broods surveyed by Site",
+  labs(title = "Annual Broods Surveyed by Zone",
        x = "Year",
-       y = "N broods") +
+       y = "N broods",
+       fill = "Zone",
+       colour = "Zone") +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.grid.major.x = element_line(color = "gray", size = 0.5)
