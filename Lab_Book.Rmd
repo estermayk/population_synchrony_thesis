@@ -1079,3 +1079,12 @@ plot the year variance with the ICCs
 model similar to initial sucmod for Ntot - ICC calc from this 
 
 write up - finish methods, start results 
+
+
+singular model - remove site_year and calc ICC with resid var
+
+RStanarm - stan_lmer function instead to do in a bayesian framework
+
+look at how much cor.test and stan_lmer changes when we change from 12 years to 9 - if big, just present 9 (12 can go in appendix)
+
+prospective (elasticity/correlations) and retrospective analyses, life table response experiments (read up), schaub IPM book 

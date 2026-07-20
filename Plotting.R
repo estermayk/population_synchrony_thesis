@@ -58,7 +58,7 @@ p_ntot <- ggplot(ntot_df, aes(x = year)) +
 
 p_ntot
 
-ggplot(ntot_df, aes(x = year, group = site, colour = site, fill = site)) +
+p_ntot2 <- ggplot(ntot_df, aes(x = year, group = site, colour = site, fill = site)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.12, colour = NA) +
   geom_line(aes(y = mean,     linetype = "Estimated Ntot"), linewidth = 0.9) +
   geom_point(aes(y = mean,    shape    = "Estimated Ntot"), size = 1.5) +
@@ -84,6 +84,8 @@ ggplot(ntot_df, aes(x = year, group = site, colour = site, fill = site)) +
          fill     = guide_legend(nrow = 2),
         # linetype = guide_legend(nrow = 2),
          shape    = guide_legend(nrow = 2))
+
+ggsave("pntot2.png", p_ntot2, width = 8, height = 4)
 
 # Exercises for Ester -
 
@@ -136,6 +138,37 @@ p_f <- ggplot(f_df, aes(x = year)) +
 
 p_f
 
+p_f2 <- ggplot(f_df, aes(x = year, group = site, colour = site, fill = site)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.12, colour = NA) +
+  geom_line(aes(y = mean,     linetype = "Estimated Productivity"), linewidth = 0.9) +
+  geom_point(aes(y = mean,    shape    = "Estimated Productivity"), size = 1.5) +
+  # geom_line(aes(y = observed, linetype = "Observed count"), linewidth = 0.9) +
+  #  geom_point(aes(y = observed, shape   = "Observed count"), size = 1.5) +
+  #  scale_linetype_manual(values = c("Estimated Ntot" = "solid",
+  #                                  "Observed count"  = "dashed")) +
+  #  scale_shape_manual(values   = c("Estimated Ntot" = 16,
+  #                                 "Observed count"  = 1)) +
+  scale_colour_viridis_d(option = "turbo") +
+  scale_fill_viridis_d(option   = "turbo") +
+  labs(title    = "Productivity", 
+       x        = "Year", 
+       y        = "N",
+       linetype = NULL, 
+       shape    = NULL,
+       colour   = "Zone", 
+       fill     = "Zone") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks = 8) +
+  guides(colour   = guide_legend(nrow = 2),
+         fill     = guide_legend(nrow = 2),
+         # linetype = guide_legend(nrow = 2),
+         shape    = guide_legend(nrow = 2))
+#plot on one for main text
+#include original to show estimated vs observed tracking 
+
+ggsave("pprod2.png", p_f2, width = 8, height = 4)
+
 
 #survival
 #juveniles
@@ -186,6 +219,34 @@ p_phi <- ggplot(phi_df, aes(x = year)) +
 
 p_phi
 
+ggplot(phi_df, aes(x = year, group = site, colour = site, fill = site)) +
+  geom_ribbon(aes(ymin = lower.x, ymax = upper.x), alpha = 0.12, colour = NA) +
+  geom_ribbon(aes(ymin = lower.y, ymax = upper.y), alpha = 0.12, colour = NA) +
+  geom_line(aes(y = mean.y,     linetype = "Estimated phia"), linewidth = 0.9) +
+  geom_point(aes(y = mean.y,    shape    = "Estimated phia"), size = 1.5) +
+   geom_line(aes(y = mean.x, linetype = "Estimated phij"), linewidth = 0.9) +
+    geom_point(aes(y = mean.x, shape   = "Estimated phij"), size = 1.5) +
+    scale_linetype_manual(values = c("Estimated phia" = "solid",
+                                    "Estimated phij"  = "dashed")) +
+    scale_shape_manual(values   = c("Estimated phia" = 16,
+                                   "Estimated phij"  = 1)) +
+  scale_colour_viridis_d(option = "turbo") +
+  scale_fill_viridis_d(option   = "turbo") +
+  labs(title    = "Survival", 
+       x        = "Year", 
+       y        = "Phi",
+       linetype = NULL, 
+       shape    = NULL,
+       colour   = "Zone", 
+       fill     = "Zone") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks = 8) +
+  guides(colour   = guide_legend(nrow = 2),
+         fill     = guide_legend(nrow = 2),
+         # linetype = guide_legend(nrow = 2),
+         shape    = guide_legend(nrow = 2))
+
 #population growth rate
 
 lambda_list <- lapply(1:nsites_bt, function(s) {
@@ -223,6 +284,36 @@ p_lambda <- ggplot(lambda_df, aes(x = year)) +
 
 p_lambda
 
+lambda_df <- lambda_df %>%
+  filter(!year %in% c("2014", "2015", "2016"))
+
+ggplot(lambda_df, aes(x = year, group = site, colour = site, fill = site)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.12, colour = NA) +
+  geom_line(aes(y = mean,     linetype = "Estimated lambda"), linewidth = 0.9) +
+  geom_point(aes(y = mean,    shape    = "Estimated lambda"), size = 1.5) +
+  # geom_line(aes(y = observed, linetype = "Observed count"), linewidth = 0.9) +
+  #  geom_point(aes(y = observed, shape   = "Observed count"), size = 1.5) +
+  #  scale_linetype_manual(values = c("Estimated Ntot" = "solid",
+  #                                  "Observed count"  = "dashed")) +
+  #  scale_shape_manual(values   = c("Estimated Ntot" = 16,
+  #                                 "Observed count"  = 1)) +
+  scale_colour_viridis_d(option = "turbo") +
+  scale_fill_viridis_d(option   = "turbo") +
+  labs(title    = "Population growth rate", 
+       x        = "Year", 
+       y        = "Lambda",
+       linetype = NULL, 
+       shape    = NULL,
+       colour   = "Zone", 
+       fill     = "Zone") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks = 8) +
+  guides(colour   = guide_legend(nrow = 2),
+         fill     = guide_legend(nrow = 2),
+         # linetype = guide_legend(nrow = 2),
+         shape    = guide_legend(nrow = 2))
+
 #immigration
 Nadimm_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("Nadimm\\[", s, ",")
@@ -256,6 +347,33 @@ p_Nadimm <- ggplot(Nadimm_df, aes(x = year)) +
   theme_bw(base_size = 12) +
   theme(legend.position = "bottom") +
   scale_x_continuous(n.breaks=8)
+
+ggplot(Nadimm_df, aes(x = year, group = site, colour = site, fill = site)) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.12, colour = NA) +
+  geom_line(aes(y = mean,     linetype = "Estimated Nadimm"), linewidth = 0.9) +
+  geom_point(aes(y = mean,    shape    = "Estimated Nadimm"), size = 1.5) +
+  # geom_line(aes(y = observed, linetype = "Observed count"), linewidth = 0.9) +
+  #  geom_point(aes(y = observed, shape   = "Observed count"), size = 1.5) +
+  #  scale_linetype_manual(values = c("Estimated Ntot" = "solid",
+  #                                  "Observed count"  = "dashed")) +
+  #  scale_shape_manual(values   = c("Estimated Ntot" = 16,
+  #                                 "Observed count"  = 1)) +
+  scale_colour_viridis_d(option = "turbo") +
+  scale_fill_viridis_d(option   = "turbo") +
+  labs(title    = "Immigration", 
+       x        = "Year", 
+       y        = "N",
+       linetype = NULL, 
+       shape    = NULL,
+       colour   = "Zone", 
+       fill     = "Zone") +
+  theme_bw(base_size = 12) +
+  theme(legend.position = "bottom") +
+  scale_x_continuous(n.breaks = 8) +
+  guides(colour   = guide_legend(nrow = 2),
+         fill     = guide_legend(nrow = 2),
+         # linetype = guide_legend(nrow = 2),
+         shape    = guide_legend(nrow = 2))
 
 p_Nadimm
 
@@ -379,19 +497,22 @@ lambda_siteyear <- lambda_df %>%
   group_by(site_year) %>%
   summarise(mean_lambda = mean,
             lower_lambda = lower,
-            upper_lambda = upper)
+            upper_lambda = upper,
+            year = year)
 
-ntot_df$site_year <- as.factor(paste(ntot_df$year, ntot_df$site, sep = "_")) 
+phia_est$site_year <- as.factor(paste(phia_est$year, phia_est$site, sep = "_")) 
 
-phia_siteyear <- ntot_df %>%
+phia_siteyear <- phia_est %>%
   group_by(site_year) %>%
   summarise(mean_phia = mean,
             lower_phia = lower,
-            upper_phia = upper)
+            upper_phia = upper,
+            year = year)
 
 phia_lambda <- left_join(lambda_siteyear, phia_siteyear, by = "site_year")
 
-phia_lambda <- subset(phia_lambda, site_year != '2014_Zone H')
+phia_lambda <- phia_lambda %>%
+  filter(!year.x %in% c("2014", "2015", "2016"))
 
 phia_lambda_p <- ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda)) +
   #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
@@ -414,17 +535,19 @@ prod_siteyear <- f_est %>%
   group_by(site_year) %>%
   summarise(mean_prod = mean,
             lower_prod = lower,
-            upper_prod = upper)
+            upper_prod = upper,
+            year = year)
 
 prod_lambda <- left_join(lambda_siteyear, prod_siteyear, by = "site_year")
 
-prod_lambda <- subset(prod_lambda, site_year != '2014_Zone H')
+prod_lambda <- prod_lambda %>%
+  filter(!year.x %in% c("2014", "2015", "2016"))
 
 prod_lambda_p <- ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda)) +
-  #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
-  #colour = "grey70", width = 0) +
-  #geom_errorbarh(aes(xmin = lower_prod, xmax = upper_prod), 
-  #colour = "grey70", height = 0) +
+  geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  colour = "grey70", width = 0) +
+  geom_errorbarh(aes(xmin = lower_prod, xmax = upper_prod), 
+  colour = "grey70", height = 0) +
   geom_point(size = 1.5, colour = "steelblue") +
   #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
@@ -441,11 +564,13 @@ ntot_siteyear <- ntot_df %>%
   group_by(site_year) %>%
   summarise(mean_ntot = mean,
             lower_ntot = lower,
-            upper_ntot = upper)
+            upper_ntot = upper,
+            year = year)
 
 ntot_lambda <- left_join(lambda_siteyear, ntot_siteyear, by = "site_year")
 
-ntot_lambda <- subset(ntot_lambda, site_year != '2014_Zone H')
+ntot_lambda <- ntot_lambda %>%
+  filter(!year.x %in% c("2014", "2015", "2016"))
 
 ntot_lambda_p <- ggplot(ntot_lambda, aes(x = mean_ntot, y = mean_lambda)) +
   #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
@@ -467,11 +592,13 @@ im_siteyear <- Nadimm_df %>%
   group_by(site_year) %>%
   summarise(mean_im = mean,
             lower_im = lower,
-            upper_im = upper)
+            upper_im = upper,
+            year = year)
 
 im_lambda <- left_join(lambda_siteyear, im_siteyear, by = "site_year")
 
-im_lambda <- subset(im_lambda, site_year != '2014_Zone H')
+im_lambda <- im_lambda %>%
+  filter(!year.x %in% c("2014", "2015", "2016"))
 
 im_lambda_p <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
   #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 

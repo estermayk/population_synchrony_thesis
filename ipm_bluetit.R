@@ -5,6 +5,7 @@ library(patchwork)
 library(viridis)
 library(ClustGeo)
 library(sf)
+library(rstanarm)
 
 # Exercise3: Transform blue tit data into similar format used here for hoopoe dataset, namely:
 
@@ -530,10 +531,6 @@ ipm_bt <- readRDS("ipm_bt.rds")
 
 view(posterior_ipm)
 
-ntot_df$site_year <- as.factor(paste(ntot_df$site, ntot_df$year, sep = "_")) 
-ntotmod <- lmer(mean ~ (1|year) + (1|site) + (1|site_year), data = ntot_df) 
-summary(ntotmod)
-
 extract_all_draws <- function(posterior, pattern, site_labels, years_vec) {
   cols <- grep(pattern, names(posterior), value = TRUE)
   
@@ -552,7 +549,14 @@ extract_all_draws <- function(posterior, pattern, site_labels, years_vec) {
 
 ntot_draws <- extract_all_draws(posterior_ipm, "Ntot\\[", site_labels, years_bt)
 
-ntotmod <- lmer(value ~ (1|year) + (1|site) + (1|site_year), data = ntot_draws) 
+ntot_thinned <- ntot_draws  %>%
+  filter(draw %% 20 == 0)
+
+ntotmod <- stan_lmer(value ~ (1|year) + (1|site) + (1|site_year), 
+                     data = ntot_thinned,
+                     chains = 2, 
+                     iter = 2000, 
+                     warmup = 500) 
 summary(ntotmod)
 
 
@@ -570,8 +574,17 @@ ntotsync
 
 lambda_draws <- extract_all_draws(posterior_ipm, "lambda\\[", site_labels, years_bt)
 
-lambdamod <- lmer(value ~ (1|year) + (1|site) + (1|site_year), data = lambda_draws) 
+lambda_thinned <- lambda_draws %>%
+  filter(draw %% 20 == 0)
+
+lambdamod <- stan_lmer(value ~ (1|year) + (1|site), 
+                       data = lambda_thinned, 
+                       chains = 2, 
+                       iter = 2000, 
+                       warmup = 500) 
 summary(lambdamod)
+
+?stan_lmer
 
 help('isSingular')
 
@@ -579,11 +592,12 @@ get_variance_intercept(lambdamod)
 
 #extracting the variance components 
 var_components <- VarCorr(lambdamod)
-var_intercept_site_year <- attr(var_components$site_year, "stddev")^2
+#var_intercept_site_year <- attr(var_components$site_year, "stddev")^2
 var_intercept_site <- attr(var_components$site, "stddev")^2
 var_intercept_year <- attr(var_components$year, "stddev")^2
+var_intercept_resid <- mean(as.matrix(lambdamod)[, "sigma"])^2
 
 #a crude look at ICC synchrony from the model 
-lambdasync <- var_intercept_year/(var_intercept_year + var_intercept_site_year)
+lambdasync <- var_intercept_year/(var_intercept_year + var_intercept_resid)
 lambdasync
  
