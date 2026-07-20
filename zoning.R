@@ -75,3 +75,6 @@ head(phendat)
 adults  <- adults  %>% left_join(sitedat[, c("site", "zone")], by = "site")
 phendat <- phendat %>% left_join(sitedat[, c("site", "zone")], by = "site")
 head(phendat)
+
+#no matter how i split it, i get zeros in my m-array from J and K - which are closest to each other so even dropping below 10 sites would still cause this
+#giving up on this and using the simple pairwise version which ensures sufficient sampling at each zone 
