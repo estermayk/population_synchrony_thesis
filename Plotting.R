@@ -85,7 +85,7 @@ p_ntot2 <- ggplot(ntot_df, aes(x = year, group = site, colour = site, fill = sit
         # linetype = guide_legend(nrow = 2),
          shape    = guide_legend(nrow = 2))
 
-ggsave("pntot2.png", p_ntot2, width = 8, height = 4)
+ggsave("figs/pntot2.png", p_ntot2, width = 8, height = 4)
 
 # Exercises for Ester -
 
@@ -167,7 +167,7 @@ p_f2 <- ggplot(f_df, aes(x = year, group = site, colour = site, fill = site)) +
 #plot on one for main text
 #include original to show estimated vs observed tracking 
 
-ggsave("pprod2.png", p_f2, width = 8, height = 4)
+ggsave("figs/pprod2.png", p_f2, width = 8, height = 4)
 
 
 #survival
@@ -219,7 +219,7 @@ p_phi <- ggplot(phi_df, aes(x = year)) +
 
 p_phi
 
-ggplot(phi_df, aes(x = year, group = site, colour = site, fill = site)) +
+p_phi2 <- ggplot(phi_df, aes(x = year, group = site, colour = site, fill = site)) +
   geom_ribbon(aes(ymin = lower.x, ymax = upper.x), alpha = 0.12, colour = NA) +
   geom_ribbon(aes(ymin = lower.y, ymax = upper.y), alpha = 0.12, colour = NA) +
   geom_line(aes(y = mean.y,     linetype = "Estimated phia"), linewidth = 0.9) +
@@ -246,6 +246,9 @@ ggplot(phi_df, aes(x = year, group = site, colour = site, fill = site)) +
          fill     = guide_legend(nrow = 2),
          # linetype = guide_legend(nrow = 2),
          shape    = guide_legend(nrow = 2))
+
+ggsave("figs/pphi2.png", p_phi2, width = 8, height = 4)
+
 
 #population growth rate
 
@@ -287,7 +290,7 @@ p_lambda
 lambda_df <- lambda_df %>%
   filter(!year %in% c("2014", "2015", "2016"))
 
-ggplot(lambda_df, aes(x = year, group = site, colour = site, fill = site)) +
+p_lambda2 <- ggplot(lambda_df, aes(x = year, group = site, colour = site, fill = site)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.12, colour = NA) +
   geom_line(aes(y = mean,     linetype = "Estimated lambda"), linewidth = 0.9) +
   geom_point(aes(y = mean,    shape    = "Estimated lambda"), size = 1.5) +
@@ -313,6 +316,9 @@ ggplot(lambda_df, aes(x = year, group = site, colour = site, fill = site)) +
          fill     = guide_legend(nrow = 2),
          # linetype = guide_legend(nrow = 2),
          shape    = guide_legend(nrow = 2))
+
+ggsave("figs/plambda2.png", p_lambda2, width = 8, height = 4)
+
 
 #immigration
 Nadimm_list <- lapply(1:nsites_bt, function(s) {
@@ -348,7 +354,7 @@ p_Nadimm <- ggplot(Nadimm_df, aes(x = year)) +
   theme(legend.position = "bottom") +
   scale_x_continuous(n.breaks=8)
 
-ggplot(Nadimm_df, aes(x = year, group = site, colour = site, fill = site)) +
+p_Nadimm2 <- ggplot(Nadimm_df, aes(x = year, group = site, colour = site, fill = site)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.12, colour = NA) +
   geom_line(aes(y = mean,     linetype = "Estimated Nadimm"), linewidth = 0.9) +
   geom_point(aes(y = mean,    shape    = "Estimated Nadimm"), size = 1.5) +
@@ -377,7 +383,10 @@ ggplot(Nadimm_df, aes(x = year, group = site, colour = site, fill = site)) +
 
 p_Nadimm
 
-rates_plots <- (p_ntot | p_lambda | p_f) / (p_phi | p_Nadimm)
+ggsave("figs/pNadimm2.png", p_Naddim2, width = 8, height = 4)
+
+
+rates_plots <- (p_ntot2 | p_lambda2 | p_f2) / (p_phi2 | p_Nadimm2)
 
 rates_plots
 
@@ -489,7 +498,17 @@ icc_var_plots <- (var_phia_year_p | icc_phia_p) / (var_prod_year_p | icc_prod_p)
 
 icc_var_plots
 
-ggsave("figs/icc_var_plots_bt.png", plot = icc_var_plots)
+icc_var_phia <- (var_phia_year_p | icc_phia_p)
+
+icc_var_prod <- (var_prod_year_p | icc_prod_p)
+
+icc_var_imm <- (var_im_year_p | icc_im_p)
+
+ggsave("figs/icc_var_plots_bt.png", plot = icc_var_plots, width = 8, height = 10)
+ggsave("figs/icc_var_phia.png", plot = icc_var_phia, width = 8, height = 4)
+ggsave("figs/icc_var_prod.png", plot = icc_var_prod, width = 8, height = 4)
+ggsave("figs/icc_var_imm.png", plot = icc_var_imm, width = 8, height = 4)
+
 
 lambda_df$site_year <- as.factor(paste(lambda_df$year, lambda_df$site, sep = "_")) 
 
@@ -544,10 +563,10 @@ prod_lambda <- prod_lambda %>%
   filter(!year.x %in% c("2014", "2015", "2016"))
 
 prod_lambda_p <- ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda)) +
-  geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
-  colour = "grey70", width = 0) +
-  geom_errorbarh(aes(xmin = lower_prod, xmax = upper_prod), 
-  colour = "grey70", height = 0) +
+  #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  #colour = "grey70", width = 0) +
+  #geom_errorbarh(aes(xmin = lower_prod, xmax = upper_prod), 
+  #colour = "grey70", height = 0) +
   geom_point(size = 1.5, colour = "steelblue") +
   #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
@@ -614,7 +633,7 @@ im_lambda_p <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
        title = "Population growth rate vs immigration by zone_year") +
   theme_bw(base_size = 12)
 
-(phia_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
+cor_ps <- (phia_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
 
 cor.test(phia_lambda$mean_lambda, phia_lambda$mean_phia)
 
@@ -623,3 +642,5 @@ cor.test(prod_lambda$mean_lambda, prod_lambda$mean_prod)
 cor.test(ntot_lambda$mean_lambda, ntot_lambda$mean_ntot)
 
 cor.test(im_lambda$mean_lambda, im_lambda$mean_im)
+
+ggsave("figs/cor_ps.png", cor_ps, width = 12, height = 6)

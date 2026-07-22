@@ -224,7 +224,7 @@ n_fledge_p <- ggplot(n_offspring_df, aes(x = factor(year), y = fledgling_count, 
   #geom_point(size = 1, alpha = 0.7, position = position_jitter(width = 0.1, seed = 3922)) +  
   #geom_line(aes(group = site, colour = Mean.Lat)) +
   theme_minimal() +
-  labs(title = "Annual fledgling count by Zone",
+  labs(title = "Annual Fledgling Count by Zone",
        x = "Year",
        y = "N fledglings",
        fill = "Zone",
@@ -299,6 +299,11 @@ for (i in site_codes) {
 }
 
 (occupancy_p / broods_p / n_fledge_p)
+
+ggsave("figs/occupancy_p.png", occupancy_p, width = 8, height = 4)
+ggsave("figs/broods_p.png", broods_p, width = 8, height = 4)
+ggsave("figs/n_fledge_p.png", n_fledge_p, width = 8, height = 4)
+
 
 # Exercise 4: Once blue tit data are in format similar to here, run the Stan model on blue tit dataset and evaluate.
 
