@@ -7,6 +7,48 @@ library(ClustGeo)
 library(sf)
 library(rstanarm)
 
+sitedat <- sitedat %>%
+  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
+                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
+                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
+                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
+                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
+                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
+                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
+                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
+                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
+                          site == "ART" | site == "MUN"  ~ "J",
+                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
+                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
+
+phendat <- phendat %>%
+  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
+                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
+                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
+                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
+                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
+                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
+                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
+                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
+                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
+                          site == "ART" | site == "MUN"  ~ "J",
+                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
+                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
+
+adults <- adults %>%
+  mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
+                          site == "BAD" | site == "LVN" | site == "DOW" | site == "GLF" ~ "B",
+                          site == "SER" | site == "MCH" | site == "PTH" | site == "STY" ~ "C",
+                          site == "BIR" | site == "DUN" | site == "BLG"  ~ "D",
+                          site == "PIT" | site == "KCZ" | site == "KCK" | site == "BLA" | site == "CAL" ~ "E",
+                          site == "DNM" | site == "DNC" | site == "DNS" | site == "DLW"  ~ "F",
+                          site == "CRU" | site == "NEW" | site == "HWP" | site == "INS" | site == "FSH" ~ "G",
+                          site == "RTH" | site == "AVI" | site == "AVN" | site == "CAR" ~ "H",
+                          site == "SLS" | site == "TOM" | site == "DAV" ~ "I",
+                          site == "ART" | site == "MUN"  ~ "J",
+                          site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
+                          site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
+
 # Exercise3: Transform blue tit data into similar format used here for hoopoe dataset, namely:
 
 
@@ -36,34 +78,6 @@ marray <- function(CH){
   out <- m.array[1:(n.occasions-1),2:(n.occasions+1)]
   return(out)
 }
-
-#lets test with ALN first
-
-ALN_adults <- adults[(adults$site == "ALN"),]
-
-ALN_adults_CH <- data.frame(individuals = c(unique(ALN_adults$ring)))
-
-ALN_years <- sort(unique(ALN_adults$year))
-
-for (year in ALN_years) {
-  ALN_adults_CH[[as.character(year)]] <- NA
-}
-
-for (i in 1:nrow(ALN_adults_CH)) {
-  individual <- ALN_adults_CH$individuals[i]
-  capture_years <- unique(ALN_adults$year[ALN_adults$ring == individual])
-  ALN_adults_CH[i, as.character(capture_years)] <- 1
-}
-
-ALN_adults_CH[is.na(ALN_adults_CH)] <- 0
-ALN_adults_CH_matrix <- as.matrix(ALN_adults_CH[,-1])
-ALN_adults_CH_matrix <- (apply(ALN_adults_CH_matrix, 2, as.numeric))
-
-ALN_adults_CH_matrix
-
-ALN_adults_marray <- marray(ALN_adults_CH_matrix)
-
-ALN_adults_marray
 
 site_codes <- unique(sitedat$zone)
 
@@ -119,6 +133,9 @@ all_combinations <- expand.grid(zone = site_codes, year = 2014:2025)
 phendat$ID <- as.factor(paste(phendat$year, phendat$site, phendat$box, sep = "_")) 
 phendat$suc[phendat$suc == "-999"] <- 0
 phendat <- phendat[!duplicated(phendat$ID, fromLast = TRUE), ]
+phendat$notes <- NULL
+phendat$eggbroke <- NULL
+
 
 ord_dates_phendat <- select(phendat, c('year', 'site', 'zone', 'ID', 'n1', 'nl', 'latestfed', 'latestcc', 'fed', 'cc', 'cs', 'fki', 'hatching_first_recorded', 'v1date', 'v2date'))
 
@@ -612,3 +629,41 @@ var_intercept_resid <- mean(as.matrix(lambdamod)[, "sigma"])^2
 lambdasync <- var_intercept_year/(var_intercept_year + var_intercept_resid)
 lambdasync
  
+
+
+#investigating irregularity in zone J
+
+L_adults <- adults[(adults$zone == "L"),]
+
+L_adults_CH <- data.frame(individuals = c(unique(L_adults$ring)))
+
+L_years <- sort(unique(L_adults$year))
+
+for (year in L_years) {
+  L_adults_CH[[as.character(year)]] <- NA
+}
+
+for (i in 1:nrow(L_adults_CH)) {
+  individual <- L_adults_CH$individuals[i]
+  capture_years <- unique(L_adults$year[L_adults$ring == individual])
+  L_adults_CH[i, as.character(capture_years)] <- 1
+}
+
+L_adults_CH[is.na(L_adults_CH)] <- 0
+L_adults_CH_matrix <- as.matrix(L_adults_CH[,-1])
+L_adults_CH_matrix <- (apply(L_adults_CH_matrix, 2, as.numeric))
+
+L_adults_CH_matrix
+
+L_adults_marray <- marray(L_adults_CH_matrix)
+
+L_adults_marray
+
+L_phen <- phendat[phendat$zone == 'L',]
+view(L_phen)
+L_phen_2021 <- phendat[phendat$year == '2021',]
+view(L_phen_2021)
+
+nrow(L_phen)
+nrow(L_phen_2021)
+

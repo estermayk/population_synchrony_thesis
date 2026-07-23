@@ -39,6 +39,8 @@ obs_counts <- expand.grid(site = site_labels, year = survey_years) %>%
 # Merge both dfs
 ntot_df <- left_join(ntot_df, obs_counts, by = c("site", "year"))
 
+mean(ntot_df$mean)
+
 # Plot
 p_ntot <- ggplot(ntot_df, aes(x = year)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), fill = "steelblue", alpha = 0.25) +
@@ -118,6 +120,8 @@ obs_f <- expand.grid(site = site_labels, year = survey_years_m1) %>%
 
 # Merge both dfs
 f_df <- left_join(f_est, obs_f, by = c("site", "year"))
+
+mean(f_df$mean)
 
 # Plot
 p_f <- ggplot(f_df, aes(x = year)) +
@@ -201,6 +205,9 @@ phia_est <- bind_rows(phia_list)
 # Merge both dfs
 phi_df <- left_join(phij_est, phia_est, by = c("site", "year"))
 
+mean(phi_df$mean.x)
+mean(phi_df$mean.y)
+
 # Plot
 p_phi <- ggplot(phi_df, aes(x = year)) +
   geom_ribbon(aes(ymin = lower.x, ymax = upper.x), fill = "steelblue", alpha = 0.25) +
@@ -260,6 +267,8 @@ lambda_list <- lapply(1:nsites_bt, function(s) {
   df
 })
 lambda_df <- bind_rows(lambda_list)
+
+mean(lambda_df$mean)
 
 # Observed counts per site per year
 #obs_counts <- expand.grid(site = site_labels, year = years) %>%
@@ -330,6 +339,8 @@ Nadimm_list <- lapply(1:nsites_bt, function(s) {
 })
 Nadimm_df <- bind_rows(Nadimm_list)
 
+mean(Nadimm_df$mean)
+
 # Observed counts per site per year
 obs_counts <- expand.grid(site = site_labels, year = survey_years) %>%
   arrange(site, year) %>%
@@ -381,9 +392,9 @@ p_Nadimm2 <- ggplot(Nadimm_df, aes(x = year, group = site, colour = site, fill =
          # linetype = guide_legend(nrow = 2),
          shape    = guide_legend(nrow = 2))
 
-p_Nadimm
+p_Nadimm2
 
-ggsave("figs/pNadimm2.png", p_Naddim2, width = 8, height = 4)
+ggsave("figs/p_Nadimm2.png", p_Nadimm2, width = 8, height = 4)
 
 
 rates_plots <- (p_ntot2 | p_lambda2 | p_f2) / (p_phi2 | p_Nadimm2)
