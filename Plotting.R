@@ -425,7 +425,8 @@ phia_icc <- posterior_ipm %>%
 icc_phia_p <- ggplot(phia_icc, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
   labs(title = "Adult Survival ICC",
-       x = "phia ICC",
+       x = "phia ICC",,
+       tag = "c)",
        y = "Density") +
   theme_minimal()
 
@@ -439,12 +440,27 @@ var_phia_year <- posterior_ipm %>%
 
 var_phia_year_p <- ggplot(var_phia_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Adult Survival Random Effect Variances",
-       x = "phia var",
+  labs(title = "Adult Survival Random Effect Variances",,
+       tag = "a)",
+       x = "phia year var",
        y = "Density") +
   theme_minimal()
 
 var_phia_year_p
+
+var_phia_siteyear <- posterior_ipm %>%
+  select(contains("var_phia_siteyear")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+var_phia_siteyear_p <- ggplot(var_phia_siteyear, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Adult Survival Random Effect Variances",,
+       tag = "b)",
+       x = "phia site year var",
+       y = "Density") +
+  theme_minimal()
+
+var_phia_siteyear_p
 
 #im icc
 
@@ -454,7 +470,8 @@ im_icc <- posterior_ipm %>%
 
 icc_im_p <- ggplot(im_icc, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Immigration ICC",
+  labs(title = "Immigration ICC",,
+       tag = "i)",
        x = "im ICC",
        y = "Density") +
   theme_minimal()
@@ -469,12 +486,27 @@ var_im_year <- posterior_ipm %>%
 
 var_im_year_p <- ggplot(var_im_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Immigration Random Effect Variances",
-       x = "im var",
+  labs(title = "Immigration Random Effect Variances",,
+       tag = "g)",
+       x = "im year var",
        y = "Density") +
   theme_minimal()
 
 var_im_year_p
+
+var_im_siteyear <- posterior_ipm %>%
+  select(contains("var_im_siteyear")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+var_im_siteyear_p <- ggplot(var_im_siteyear, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Immigration Random Effect Variances",,
+       tag = "h)",
+       x = "im site year var",
+       y = "Density") +
+  theme_minimal()
+
+var_im_siteyear_p
 
 #prod
 prod_icc <- posterior_ipm %>%
@@ -483,7 +515,8 @@ prod_icc <- posterior_ipm %>%
 
 icc_prod_p <- ggplot(prod_icc, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Productivity ICC",
+  labs(title = "Productivity ICC",,
+       tag = "f)",
        x = "prod ICC",
        y = "Density") +
   theme_minimal()
@@ -498,14 +531,29 @@ var_prod_year <- posterior_ipm %>%
 
 var_prod_year_p <- ggplot(var_prod_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Productivity Random Effect Variances",
-       x = "prod var",
+  labs(title = "Productivity Random Effect Variances",,
+       tag = "d)",
+       x = "prod year var",
        y = "Density") +
   theme_minimal()
 
 var_prod_year_p
 
-icc_var_plots <- (var_phia_year_p | icc_phia_p) / (var_prod_year_p | icc_prod_p) / (var_im_year_p | icc_im_p)
+var_prod_siteyear <- posterior_ipm %>%
+  select(contains("var_prod_siteyear")) %>%
+  pivot_longer(cols = everything(), values_to = "Value")
+
+var_prod_siteyear_p <- ggplot(var_prod_siteyear, aes(x = Value)) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  labs(title = "Productivity Random Effect Variances",
+       tag = "e)",
+       x = "prod site year var",
+       y = "Density") +
+  theme_minimal()
+
+var_prod_siteyear_p
+
+icc_var_plots <- (var_phia_year_p | var_phia_siteyear_p | icc_phia_p) / (var_prod_year_p | var_prod_siteyear_p | icc_prod_p) / (var_im_year_p | var_im_siteyear_p |icc_im_p)
 
 icc_var_plots
 
@@ -515,7 +563,7 @@ icc_var_prod <- (var_prod_year_p | icc_prod_p)
 
 icc_var_imm <- (var_im_year_p | icc_im_p)
 
-ggsave("figs/icc_var_plots_bt.png", plot = icc_var_plots, width = 8, height = 10)
+ggsave("figs/icc_var_plots_bt.png", plot = icc_var_plots, width = 12, height = 6)
 ggsave("figs/icc_var_phia.png", plot = icc_var_phia, width = 8, height = 4)
 ggsave("figs/icc_var_prod.png", plot = icc_var_prod, width = 8, height = 4)
 ggsave("figs/icc_var_imm.png", plot = icc_var_imm, width = 8, height = 4)
@@ -553,7 +601,8 @@ phia_lambda_p <- ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda)) +
   #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
-  labs(x = "Mean adult survival (φa)",
+  labs(tag = "a)",
+       x = "Mean adult survival (φa)",
        y = "Mean λ",
        title = "Population growth rate vs adult survival by zone_year") +
   theme_bw(base_size = 12)
@@ -582,7 +631,8 @@ prod_lambda_p <- ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda)) +
   #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
-  labs(x = "Mean productivity",
+  labs(tag = "c)",
+       x = "Mean productivity",
        y = "Mean λ",
        title = "Population growth rate vs productivity by zone_year") +
   theme_bw(base_size = 12)
@@ -611,7 +661,8 @@ ntot_lambda_p <- ggplot(ntot_lambda, aes(x = mean_ntot, y = mean_lambda)) +
   #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
-  labs(x = "Mean ntot",
+  labs(tag = "b)",
+       x = "Mean ntot",
        y = "Mean λ",
        title = "Population growth rate vs population size by zone_year") +
   theme_bw(base_size = 12)
@@ -639,7 +690,8 @@ im_lambda_p <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
   #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
-  labs(x = "Mean immigrants",
+  labs(tag = "d)",
+       x = "Mean immigrants",
        y = "Mean λ",
        title = "Population growth rate vs immigration by zone_year") +
   theme_bw(base_size = 12)
