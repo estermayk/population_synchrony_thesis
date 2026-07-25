@@ -584,9 +584,11 @@ ntotmod <- stan_lmer(value ~ (1|year) + (1|site) + (1|site_year),
                      data = ntot_thinned,
                      chains = 2, 
                      iter = 2000, 
-                     warmup = 500) 
+                     warmup = 500,
+                     cores = 2) 
 summary(ntotmod)
 
+#bootstrapped confidence intervals - with lmer package 
 
 get_variance_intercept(ntotmod)
 

@@ -4,7 +4,7 @@ nsites_bt  <- stan_data_bt$nsites
 years_bt   <- 1:nyears_bt
 years_m1_bt <- 1:(nyears_bt - 1)  # for parameters indexed over nyears-1
 
-site_labels <- paste0("Zone ", unique(adults$zone))
+site_labels <- paste0(unique(adults$zone))
 
 site_labels
 
@@ -440,7 +440,7 @@ var_phia_year <- posterior_ipm %>%
 
 var_phia_year_p <- ggplot(var_phia_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Adult Survival Random Effect Variances",,
+  labs(title = "Adult Survival Year Variances",,
        tag = "a)",
        x = "phia year var",
        y = "Density") +
@@ -454,9 +454,9 @@ var_phia_siteyear <- posterior_ipm %>%
 
 var_phia_siteyear_p <- ggplot(var_phia_siteyear, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Adult Survival Random Effect Variances",,
+  labs(title = "Adult Survival Zone Year Variances",,
        tag = "b)",
-       x = "phia site year var",
+       x = "phia zone year var",
        y = "Density") +
   theme_minimal()
 
@@ -486,7 +486,7 @@ var_im_year <- posterior_ipm %>%
 
 var_im_year_p <- ggplot(var_im_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Immigration Random Effect Variances",,
+  labs(title = "Immigration Year Variances",,
        tag = "g)",
        x = "im year var",
        y = "Density") +
@@ -500,9 +500,9 @@ var_im_siteyear <- posterior_ipm %>%
 
 var_im_siteyear_p <- ggplot(var_im_siteyear, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Immigration Random Effect Variances",,
+  labs(title = "Immigration Zone Year Variances",,
        tag = "h)",
-       x = "im site year var",
+       x = "im zone year var",
        y = "Density") +
   theme_minimal()
 
@@ -531,7 +531,7 @@ var_prod_year <- posterior_ipm %>%
 
 var_prod_year_p <- ggplot(var_prod_year, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Productivity Random Effect Variances",,
+  labs(title = "Productivity Year Variances",,
        tag = "d)",
        x = "prod year var",
        y = "Density") +
@@ -545,9 +545,9 @@ var_prod_siteyear <- posterior_ipm %>%
 
 var_prod_siteyear_p <- ggplot(var_prod_siteyear, aes(x = Value)) +
   geom_density(fill = "steelblue", alpha = 0.5) +
-  labs(title = "Productivity Random Effect Variances",
+  labs(title = "Productivity Zone Year Variances",
        tag = "e)",
-       x = "prod site year var",
+       x = "prod zone year var",
        y = "Density") +
   theme_minimal()
 
@@ -606,6 +606,36 @@ phia_lambda_p <- ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda)) +
        y = "Mean λ",
        title = "Population growth rate vs adult survival by zone_year") +
   theme_bw(base_size = 12)
+
+phij_est$site_year <- as.factor(paste(phij_est$year, phij_est$site, sep = "_")) 
+
+phij_siteyear <- phij_est %>%
+  group_by(site_year) %>%
+  summarise(mean_phij = mean,
+            lower_phij = lower,
+            upper_phij = upper,
+            year = year)
+
+phij_lambda <- left_join(lambda_siteyear, phij_siteyear, by = "site_year")
+
+phij_lambda <- phij_lambda %>%
+  filter(!year.x %in% c("2014", "2015", "2016"))
+
+phij_lambda_p <- ggplot(phij_lambda, aes(x = mean_phij, y = mean_lambda)) +
+  #geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  #colour = "grey70", width = 0) +
+  #geom_errorbarh(aes(xmin = lower_phij, xmax = upper_phij), 
+  #colour = "grey70", height = 0) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(tag = "a)",
+       x = "Mean juvenile survival (φj)",
+       y = "Mean λ",
+       title = "Population growth rate vs juvenile survival by zone_year") +
+  theme_bw(base_size = 12)
+
 
 
 f_est$site_year <- as.factor(paste(f_est$year, f_est$site, sep = "_")) 
@@ -696,9 +726,13 @@ im_lambda_p <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
        title = "Population growth rate vs immigration by zone_year") +
   theme_bw(base_size = 12)
 
-cor_ps <- (phia_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
+cor_ps <- (phia_lambda_p | phij_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
+
+(phia_lambda_p / phij_lambda_p)
 
 cor.test(phia_lambda$mean_lambda, phia_lambda$mean_phia)
+
+cor.test(phij_lambda$mean_lambda, phij_lambda$mean_phij)
 
 cor.test(prod_lambda$mean_lambda, prod_lambda$mean_prod)
 
