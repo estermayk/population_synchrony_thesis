@@ -604,7 +604,7 @@ phia_lambda_p <- ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda)) +
   labs(tag = "a)",
        x = "Mean adult survival (φa)",
        y = "Mean λ",
-       title = "Population growth rate vs adult survival by zone_year") +
+       title = "Population growth rate vs adult survival by zone year") +
   theme_bw(base_size = 12)
 
 phij_est$site_year <- as.factor(paste(phij_est$year, phij_est$site, sep = "_")) 
@@ -633,7 +633,7 @@ phij_lambda_p <- ggplot(phij_lambda, aes(x = mean_phij, y = mean_lambda)) +
   labs(tag = "a)",
        x = "Mean juvenile survival (φj)",
        y = "Mean λ",
-       title = "Population growth rate vs juvenile survival by zone_year") +
+       title = "Population growth rate vs juvenile survival by zone year") +
   theme_bw(base_size = 12)
 
 
@@ -664,7 +664,7 @@ prod_lambda_p <- ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda)) +
   labs(tag = "c)",
        x = "Mean productivity",
        y = "Mean λ",
-       title = "Population growth rate vs productivity by zone_year") +
+       title = "Population growth rate vs productivity by zone year") +
   theme_bw(base_size = 12)
 
 
@@ -694,7 +694,7 @@ ntot_lambda_p <- ggplot(ntot_lambda, aes(x = mean_ntot, y = mean_lambda)) +
   labs(tag = "b)",
        x = "Mean ntot",
        y = "Mean λ",
-       title = "Population growth rate vs population size by zone_year") +
+       title = "Population growth rate vs population size by zone year") +
   theme_bw(base_size = 12)
 
 Nadimm_df$site_year <- as.factor(paste(Nadimm_df$year, Nadimm_df$site, sep = "_")) 
@@ -723,7 +723,7 @@ im_lambda_p <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
   labs(tag = "d)",
        x = "Mean immigrants",
        y = "Mean λ",
-       title = "Population growth rate vs immigration by zone_year") +
+       title = "Population growth rate vs immigration by zone year") +
   theme_bw(base_size = 12)
 
 cor_ps <- (phia_lambda_p | phij_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
