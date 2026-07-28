@@ -60,6 +60,8 @@ p_ntot <- ggplot(ntot_df, aes(x = year)) +
 
 p_ntot
 
+ggsave("figs/pntot.png", p_ntot, width = 9, height = 4)
+
 p_ntot2 <- ggplot(ntot_df, aes(x = year, group = site, colour = site, fill = site)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.12, colour = NA) +
   geom_line(aes(y = mean,     linetype = "Estimated Ntot"), linewidth = 0.9) +
@@ -726,7 +728,7 @@ im_lambda_p <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
        title = "Population growth rate vs immigration by zone year") +
   theme_bw(base_size = 12)
 
-cor_ps <- (phia_lambda_p | phij_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
+cor_ps <- (phia_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
 
 (phia_lambda_p / phij_lambda_p)
 
@@ -741,3 +743,67 @@ cor.test(ntot_lambda$mean_lambda, ntot_lambda$mean_ntot)
 cor.test(im_lambda$mean_lambda, im_lambda$mean_im)
 
 ggsave("figs/cor_ps.png", cor_ps, width = 12, height = 6)
+
+phia_lambda_p_CrI <- ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda)) +
+  geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  colour = "grey70", width = 0) +
+  geom_errorbarh(aes(xmin = lower_phia, xmax = upper_phia), 
+  colour = "grey70", height = 0) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(tag = "a)",
+       x = "Mean adult survival (φa)",
+       y = "Mean λ",
+       title = "Population growth rate vs adult survival by zone year") +
+  theme_bw(base_size = 12)
+
+prod_lambda_p_CrI <- ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda)) +
+  geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  colour = "grey70", width = 0) +
+  geom_errorbarh(aes(xmin = lower_prod, xmax = upper_prod), 
+  colour = "grey70", height = 0) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(tag = "c)",
+       x = "Mean productivity",
+       y = "Mean λ",
+       title = "Population growth rate vs productivity by zone year") +
+  theme_bw(base_size = 12)
+
+ntot_lambda_p_CrI <- ggplot(ntot_lambda, aes(x = mean_ntot, y = mean_lambda)) +
+  geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  colour = "grey70", width = 0) +
+  geom_errorbarh(aes(xmin = lower_ntot, xmax = upper_ntot), 
+  colour = "grey70", height = 0) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(tag = "b)",
+       x = "Mean ntot",
+       y = "Mean λ",
+       title = "Population growth rate vs population size by zone year") +
+  theme_bw(base_size = 12)
+
+im_lambda_p_CrI <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
+  geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
+  colour = "grey70", width = 0) +
+  geom_errorbarh(aes(xmin = lower_im, xmax = upper_im), 
+  colour = "grey70", height = 0) +
+  geom_point(size = 1.5, colour = "steelblue") +
+  #geom_text(nudge_y = 0.02, size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
+  geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
+  labs(tag = "d)",
+       x = "Mean immigrants",
+       y = "Mean λ",
+       title = "Population growth rate vs immigration by zone year") +
+  theme_bw(base_size = 12)
+
+cor_ps_CrI <- (phia_lambda_p_CrI / prod_lambda_p_CrI | ntot_lambda_p_CrI / im_lambda_p_CrI)
+cor_ps_CrI
+ggsave("figs/cor_ps_CrI.png", cor_ps_CrI, width = 12, height = 6)
