@@ -6,6 +6,7 @@ library(viridis)
 library(ClustGeo)
 library(sf)
 library(rstanarm)
+library(lme4)
 
 sitedat <- sitedat %>%
   mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
@@ -281,7 +282,7 @@ broods_surveyed_df <- broods_surveyed_df %>%
 broods_p <- ggplot(broods_surveyed_df, aes(x = factor(year), y = brood_count, colour = zone, fill = zone)) +
   #scale_colour_gradient(high = 'purple3', low = 'orange') +
   #scale_fill_gradient(high = 'purple3', low = 'orange') +
-  geom_violin(fill = "darkgray", alpha = 0.3, color = NA) +
+  geom_violin(fill = "lightgray", alpha = 0.3, color = NA) +
   geom_path(
     aes(group = zone), 
     size = 0.7, 
@@ -577,6 +578,23 @@ extract_all_draws <- function(posterior, pattern, site_labels, years_vec) {
 
 ntot_draws <- extract_all_draws(posterior_ipm, "Ntot\\[", site_labels, years_bt)
 
+#simple:
+ntot_mod_simple <- lmer(value ~ (1|year) + (1|site) + (1|site_year), data = ntot_draws)
+summary(ntot_mod_simple)
+
+#extracting the variance components 
+var_components_simpntot <- VarCorr(ntot_mod_simple)
+var_intercept_site_year_simpntot <- attr(var_components_simpntot$site_year, "stddev")^2
+var_intercept_site_simpntot <- attr(var_components_simpntot$site, "stddev")^2
+var_intercept_year_simpntot <- attr(var_components_simpntot$year_idx, "stddev")^2
+#var_intercept_resid <- mean(as.matrix(ntotmod)[, "sigma"])^2
+
+#a crude look at ICC synchrony from the model 
+ntotsync_simp <- var_intercept_year_simpntot/(var_intercept_year_simpntot + var_intercept_site_year_simpntot)
+ntotsync_simp
+#bootstrapped confidence intervals - with lmer package 
+
+#stan_lmer:
 ntot_thinned <- ntot_draws  %>%
   filter(draw %% 20 == 0)
 
@@ -588,49 +606,72 @@ ntotmod <- stan_lmer(value ~ (1|year) + (1|site) + (1|site_year),
                      cores = 2) 
 summary(ntotmod)
 
-#bootstrapped confidence intervals - with lmer package 
-
 get_variance_intercept(ntotmod)
 
 #extracting the variance components 
-var_components <- VarCorr(ntotmod)
-var_intercept_site_year <- attr(var_components$site_year, "stddev")^2
-var_intercept_site <- attr(var_components$site, "stddev")^2
-var_intercept_year <- attr(var_components$year, "stddev")^2
+var_components_ntot <- VarCorr(ntotmod)
+var_intercept_site_year_ntot <- attr(var_components_ntot$site_year, "stddev")^2
+var_intercept_site_ntot <- attr(var_components_ntot$site, "stddev")^2
+var_intercept_year_ntot <- attr(var_components_ntot$year, "stddev")^2
 
 #a crude look at ICC synchrony from the model 
-ntotsync <- var_intercept_year/(var_intercept_year + var_intercept_site_year)
+ntotsync <- var_intercept_year_ntot/(var_intercept_year_ntot + var_intercept_site_year_ntot)
 ntotsync
 
+icc_means <- function(model) {
+  vc <- as.data.frame(VarCorr(model))        
+  year_var  <- vc$vcov[vc$grp == "year"]     
+  siteyear_var <- vc$vcov[vc$grp == "site_year"]                  
+  year_var / (year_var + siteyear_var)
+}
+
+icc_check <- icc_means(ntot_mod_simple)
+
+ntot_icc_boot <- bootstrap(ntot_mod_simple, .f = icc_means, type = "parametric", B = 200)
+summary(ntot_icc_boot)
+confint(ntot_icc_boot, type=c("norm"))
+
+plot(ntot_icc_boot) + labs(title="Mean Population Size") + xlab("ICC (Spatial Synchrony)")
+
+#lambda
 lambda_draws <- extract_all_draws(posterior_ipm, "lambda\\[", site_labels, years_bt)
 
+#simple:
+lambda_mod_simple <- lmer(value ~ (1|year_idx) + (1|site_year), data = lambda_draws)
+summary(lambda_mod_simple)
+
+#extracting the variance components 
+var_components_simplam <- VarCorr(lambda_mod_simple)
+var_intercept_site_year_simplam <- attr(var_components_simplam$site_year, "stddev")^2
+#var_intercept_site <- attr(var_components$site, "stddev")^2
+var_intercept_year_simplam <- attr(var_components_simplam$year_idx, "stddev")^2
+#var_intercept_resid <- mean(as.matrix(lambdamod)[, "sigma"])^2
+
+#a crude look at ICC synchrony from the model 
+lambdasync_simp <- var_intercept_year_simplam/(var_intercept_year_simplam + var_intercept_site_year_simplam)
+lambdasync_simp
+
+#stan_lmer:
 lambda_thinned <- lambda_draws %>%
   filter(draw %% 20 == 0)
 
-lambdamod <- stan_lmer(value ~ (1|year) + (1|site), 
+lambdamod <- stan_lmer(value ~ (1|year) + (1|site_year), 
                        data = lambda_thinned, 
                        chains = 2, 
                        iter = 2000, 
                        warmup = 500) 
 summary(lambdamod)
 
-?stan_lmer
-
-help('isSingular')
-
-get_variance_intercept(lambdamod)
-
 #extracting the variance components 
-var_components <- VarCorr(lambdamod)
-#var_intercept_site_year <- attr(var_components$site_year, "stddev")^2
-var_intercept_site <- attr(var_components$site, "stddev")^2
-var_intercept_year <- attr(var_components$year, "stddev")^2
-var_intercept_resid <- mean(as.matrix(lambdamod)[, "sigma"])^2
+var_components_lam <- VarCorr(lambdamod)
+var_intercept_site_year_lam <- attr(var_components_lam$site_year, "stddev")^2
+#var_intercept_site_lam <- attr(var_components$site, "stddev")^2
+var_intercept_year_lam <- attr(var_components_lam$year, "stddev")^2
+var_intercept_resid_lam <- mean(as.matrix(lambdamod)[, "sigma"])^2
 
 #a crude look at ICC synchrony from the model 
 lambdasync <- var_intercept_year/(var_intercept_year + var_intercept_resid)
 lambdasync
- 
 
 
 #investigating irregularity in zone J

@@ -728,7 +728,7 @@ im_lambda_p <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
        title = "Population growth rate vs immigration by zone year") +
   theme_bw(base_size = 12)
 
-cor_ps <- (phia_lambda_p / prod_lambda_p | ntot_lambda_p / im_lambda_p)
+cor_ps <- (phia_lambda_p / prod_lambda_p | phij_lambda_p / im_lambda_p)
 
 (phia_lambda_p / phij_lambda_p)
 
