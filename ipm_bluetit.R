@@ -1,12 +1,17 @@
 library(rstan)
 library(tidyverse)
-library(ggplot2)
 library(patchwork)
 library(viridis)
 library(ClustGeo)
 library(sf)
 library(rstanarm)
 library(lme4)
+library(janitor)
+library(broom.mixed)
+library(lmerTest)
+library(lmeresampler)
+library(brms)
+
 
 sitedat <- sitedat %>%
   mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
@@ -35,6 +40,9 @@ phendat <- phendat %>%
                           site == "ART" | site == "MUN"  ~ "J",
                           site == "FOU" | site == "ALN" | site == "DEL" ~ "K",
                           site == "TAI" | site == "SPD" | site == "OSP" | site == "DOR" ~ "L"))
+
+sitedat <- sitedat %>%
+  filter(!is.na(zone))
 
 adults <- adults %>%
   mutate(zone = case_when(site == "EDI" | site == "RSY" | site == "FOF" ~ "A",
@@ -547,6 +555,22 @@ print(ipm_bt,
                "var_prod_year", "var_prod_siteyear", "icc_prod"),
       digits = 3)
 
+pars_to_print <- c("mphia", "mim", "mprod",
+                      "sig_site_phia", "sig_site_im", "sig_site_prod",
+                      "sig_sy_phia", "sig_sy_im", "sig_sy_prod",
+                      "mlam",
+                      "var_phia_year", "var_phia_siteyear", "icc_phia",
+                      "var_im_year", "var_im_siteyear", "icc_im",
+                      "var_prod_year", "var_prod_siteyear", "icc_prod")
+
+model_summary <- summary(ipm_bt, pars = pars_to_print)$summary %>%
+  as.data.frame() %>%
+  rownames_to_column("parameter") %>%
+  mutate(across(where(is.numeric), ~round(., 3)))  # only rounds numeric columns
+
+write.csv(model_summary, "ipm_summary.csv", row.names = FALSE)
+
+
 # Get posterior distributions
 posterior_ipm <- as.data.frame(ipm_bt)
 
@@ -592,7 +616,26 @@ var_intercept_year_simpntot <- attr(var_components_simpntot$year_idx, "stddev")^
 #a crude look at ICC synchrony from the model 
 ntotsync_simp <- var_intercept_year_simpntot/(var_intercept_year_simpntot + var_intercept_site_year_simpntot)
 ntotsync_simp
+
 #bootstrapped confidence intervals - with lmer package 
+
+icc_means <- function(model) {
+  vc <- as.data.frame(VarCorr(model))        
+  year_var  <- vc$vcov[vc$grp == "year"]     
+  siteyear_var <- vc$vcov[vc$grp == "site_year"]                  
+  year_var / (year_var + siteyear_var)
+}
+
+icc_check <- icc_means(ntot_mod_simple)
+
+print(icc_check)
+
+ntot_icc_boot <- bootstrap(ntot_mod_simple, .f = icc_means, type = "parametric", B = 200)
+summary(ntot_icc_boot)
+confint(ntot_icc_boot, type=c("norm"))
+
+??bootstrap
+
 
 #stan_lmer:
 ntot_thinned <- ntot_draws  %>%
@@ -617,21 +660,6 @@ var_intercept_year_ntot <- attr(var_components_ntot$year, "stddev")^2
 #a crude look at ICC synchrony from the model 
 ntotsync <- var_intercept_year_ntot/(var_intercept_year_ntot + var_intercept_site_year_ntot)
 ntotsync
-
-icc_means <- function(model) {
-  vc <- as.data.frame(VarCorr(model))        
-  year_var  <- vc$vcov[vc$grp == "year"]     
-  siteyear_var <- vc$vcov[vc$grp == "site_year"]                  
-  year_var / (year_var + siteyear_var)
-}
-
-icc_check <- icc_means(ntot_mod_simple)
-
-ntot_icc_boot <- bootstrap(ntot_mod_simple, .f = icc_means, type = "parametric", B = 200)
-summary(ntot_icc_boot)
-confint(ntot_icc_boot, type=c("norm"))
-
-plot(ntot_icc_boot) + labs(title="Mean Population Size") + xlab("ICC (Spatial Synchrony)")
 
 #lambda
 lambda_draws <- extract_all_draws(posterior_ipm, "lambda\\[", site_labels, years_bt)
@@ -710,3 +738,4 @@ view(L_phen_2021)
 nrow(L_phen)
 nrow(L_phen_2021)
 
+median(phia_icc$Value)
