@@ -882,8 +882,7 @@ phia_lambda_p_CrI <- ggplot(phia_lambda, aes(x = mean_phia, y = mean_lambda)) +
        x = "Mean adult survival (φa)",
        y = "Mean λ",
        title = "Population growth rate vs adult survival by zone year") +
-  theme_bw(base_size = 12)+
-  coord_cartesian(ylim = c(0.7, 1.3))
+  theme_bw(base_size = 12)
 
 phij_lambda_p_CrI <- ggplot(phij_lambda, aes(x = mean_phij, y = mean_lambda)) +
   geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
@@ -894,12 +893,11 @@ phij_lambda_p_CrI <- ggplot(phij_lambda, aes(x = mean_phij, y = mean_lambda)) +
   #geom_text(nudge_y = 0.02, size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", colour = "firebrick") +
   geom_smooth(method = "lm", se = TRUE, colour = "steelblue", alpha = 0.2) +
-  labs(tag = "a)",
+  labs(tag = "b)",
        x = "Mean juvenile survival (φj)",
        y = "Mean λ",
        title = "Population growth rate vs juvenile survival by zone year") +
-  theme_bw(base_size = 12)+
-  coord_cartesian(ylim = c(0.7, 1.3))
+  theme_bw(base_size = 12)
 
 prod_lambda_p_CrI <- ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda)) +
   geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
@@ -914,8 +912,7 @@ prod_lambda_p_CrI <- ggplot(prod_lambda, aes(x = mean_prod, y = mean_lambda)) +
        x = "Mean productivity",
        y = "Mean λ",
        title = "Population growth rate vs productivity by zone year") +
-  theme_bw(base_size = 12)+
-  coord_cartesian(ylim = c(0.7, 1.3))
+  theme_bw(base_size = 12)
 
 #ntot_lambda_p_CrI <- ggplot(ntot_lambda, aes(x = mean_ntot, y = mean_lambda)) +
 #  geom_errorbar(aes(ymin = lower_lambda, ymax = upper_lambda), 
@@ -945,8 +942,7 @@ im_lambda_p_CrI <- ggplot(im_lambda, aes(x = mean_im, y = mean_lambda)) +
        x = "Mean immigrants",
        y = "Mean λ",
        title = "Population growth rate vs immigration by zone year") +
-  theme_bw(base_size = 12)+
-  coord_cartesian(ylim = c(0.7, 1.3))
+  theme_bw(base_size = 12)
 
 cor_ps_CrI <- (phia_lambda_p_CrI / prod_lambda_p_CrI | phij_lambda_p_CrI / im_lambda_p_CrI)
 cor_ps_CrI
