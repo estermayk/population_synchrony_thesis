@@ -1,2 +1,3 @@
 # population_synchrony_thesis
-Differential contribution of demographic rates to spatial population synchrony in a scottish blue tit metapopulation
+Spatial synchrony and population dynamics in a Scottish blue tit metapopulation
+Code and figures relating to a thesis submitted in partial fulfilment of a masters of science in ecology, evolution and biodiversity
