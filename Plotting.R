@@ -965,10 +965,12 @@ icc_df <- posterior_ipm %>%
                        "icc_im"   = "Immigration"),
          source = "IPM posterior")
 
+write.csv(icc_df, "icc_table.csv", row.names = FALSE)
+
 lmer_icc <- data.frame(
   rate   = "Population size",
   mean   = 0.373,
-  lower  = 0.206,    # no posterior uncertainty from lmer
+  lower  = 0.206,    #no posterior uncertainty from lmer
   upper  = 0.558,
   source = "lmer"
 )
