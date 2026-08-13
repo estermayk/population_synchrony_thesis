@@ -6,9 +6,7 @@ nsites_bt  <- stan_data_bt$nsites
 years_bt   <- 1:nyears_bt
 years_m1_bt <- 1:(nyears_bt - 1)  # for parameters indexed over nyears-1
 
-site_labels <- paste0(unique(adults$zone))
-
-site_labels
+site_codes
 
 survey_years <- c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025)
 survey_years_m1 <- c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024)
@@ -28,7 +26,7 @@ ntot_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("Ntot\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
   df$year <- survey_years
-  df$site <- site_labels[s]
+  df$site <- site_codes[s]
   df
 })
 ntot_df <- bind_rows(ntot_list)
@@ -37,15 +35,10 @@ obs_counts$site[1:12]
 survey_years
 nyears_bt
 
-# Observed counts per site per year
-obs_counts <- expand.grid(site = site_labels, year = survey_years) %>%
-  arrange(site, year) %>%
-  mutate(observed = as.vector(t(stan_data_bt$y)))  # y is [nsites, nyears]
-
 obs_counts <- data.frame(
-  site     = rep(site_labels, each = nyears_bt),   # K×12, J×12, H×12...
-  year     = rep(survey_years, times = nsites_bt),  # 2014:2025 for each site
-  observed = as.vector(t(stan_data_bt$y))           # matches site_codes order
+  site     = rep(site_codes, each = nyears_bt),  
+  year     = rep(survey_years, times = nsites_bt),
+  observed = as.vector(t(stan_data_bt$y))
 )
 
 # Merge both dfs
@@ -122,13 +115,13 @@ f_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("f\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
   df$year <- survey_years_m1
-  df$site <- site_labels[s]
+  df$site <- site_codes[s]
   df
 })
 f_est <- bind_rows(f_list)
 
 # Observed f per site per year
-obs_f <- expand.grid(site = site_labels, year = survey_years_m1) %>%
+obs_f <- expand.grid(site = site_codes, year = survey_years_m1) %>%
   arrange(site, year) %>%
   mutate(observed = as.vector(t(stan_data_bt$J / stan_data_bt$R)))
 
@@ -195,7 +188,7 @@ phij_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("phij\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
   df$year <- survey_years_m1
-  df$site <- site_labels[s]
+  df$site <- site_codes[s]
   df
 })
 phij_est <- bind_rows(phij_list)
@@ -205,14 +198,14 @@ phia_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("phia\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
   df$year <- survey_years_m1
-  df$site <- site_labels[s]
+  df$site <- site_codes[s]
   df
 })
 phia_est <- bind_rows(phia_list)
 
 
 # Observed f per site per year
-#obs_phij <- expand.grid(site = site_labels, year = years_m1) %>%
+#obs_phij <- expand.grid(site = site_codes, year = years_m1) %>%
 # arrange(site, year) %>%
 #mutate(observed = as.vector(t()))
 
@@ -277,7 +270,7 @@ lambda_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("lambda\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
   df$year <- survey_years_m1
-  df$site <- site_labels[s]
+  df$site <- site_codes[s]
   df
 })
 lambda_df <- bind_rows(lambda_list)
@@ -285,7 +278,7 @@ lambda_df <- bind_rows(lambda_list)
 mean(lambda_df$mean)
 
 # Observed counts per site per year
-#obs_counts <- expand.grid(site = site_labels, year = years) %>%
+#obs_counts <- expand.grid(site = site_codes, year = years) %>%
 # arrange(site, year) %>%
 #mutate(observed = as.vector(t(stan_data$y)))  # y is [nsites, nyears]
 
@@ -351,7 +344,7 @@ Nadimm_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("Nadimm\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
   df$year <- survey_years
-  df$site <- site_labels[s]
+  df$site <- site_codes[s]
   df
 })
 Nadimm_df <- bind_rows(Nadimm_list)
@@ -359,7 +352,7 @@ Nadimm_df <- bind_rows(Nadimm_list)
 mean(Nadimm_df$mean)
 
 # Observed counts per site per year
-obs_counts <- expand.grid(site = site_labels, year = survey_years) %>%
+obs_counts <- expand.grid(site = site_codes, year = survey_years) %>%
   arrange(site, year) %>%
   mutate(observed = as.vector(t(stan_data_bt$y)))  # y is [nsites, nyears]
 
@@ -425,7 +418,7 @@ p_list <- lapply(1:nsites_bt, function(s) {
   pattern <- paste0("p\\[", s, ",")
   df <- extract_summary(posterior_ipm, pattern)
   df$year <- survey_years_m1
-  df$site <- site_labels[s]
+  df$site <- site_codes[s]
   df
 })
 p_df <- bind_rows(p_list)
@@ -433,7 +426,7 @@ p_df <- bind_rows(p_list)
 mean(p_df$mean)
 
 # Observed counts per site per year
-#obs_counts <- expand.grid(site = site_labels, year = years) %>%
+#obs_counts <- expand.grid(site = site_codes, year = years) %>%
 # arrange(site, year) %>%
 #mutate(observed = as.vector(t(stan_data$y)))  # y is [nsites, nyears]
 

@@ -584,7 +584,7 @@ ipm_bt <- readRDS("ipm_bt.rds")
 
 view(posterior_ipm)
 
-extract_all_draws <- function(posterior, pattern, site_labels, years_vec) {
+extract_all_draws <- function(posterior, pattern, site_codes, years_vec) {
   cols <- grep(pattern, names(posterior), value = TRUE)
   
   posterior[, cols, drop = FALSE] %>%
@@ -595,12 +595,12 @@ extract_all_draws <- function(posterior, pattern, site_labels, years_vec) {
                    into = c("site_idx", "year_idx"),
                    regex = "\\[(\\d+),(\\d+)\\]",
                    convert = TRUE) %>%
-    mutate(site     = site_labels[site_idx],
+    mutate(site     = site_codes[site_idx],
            year     = years_vec[year_idx],
            site_year = paste(site, year, sep = "_"))
 }
 
-ntot_draws <- extract_all_draws(posterior_ipm, "Ntot\\[", site_labels, years_bt)
+ntot_draws <- extract_all_draws(posterior_ipm, "Ntot\\[", site_codes, years_bt)
 
 #simple:
 ntot_mod_simple <- lmer(value ~ (1|year) + (1|site) + (1|site_year), data = ntot_draws)
@@ -662,7 +662,7 @@ ntotsync <- var_intercept_year_ntot/(var_intercept_year_ntot + var_intercept_sit
 ntotsync
 
 #lambda
-lambda_draws <- extract_all_draws(posterior_ipm, "lambda\\[", site_labels, years_bt)
+lambda_draws <- extract_all_draws(posterior_ipm, "lambda\\[", site_codes, years_bt)
 
 #simple:
 lambda_mod_simple <- lmer(value ~ (1|year_idx) + (1|site_year), data = lambda_draws)
@@ -739,3 +739,4 @@ nrow(L_phen)
 nrow(L_phen_2021)
 
 median(phia_icc$Value)
+
